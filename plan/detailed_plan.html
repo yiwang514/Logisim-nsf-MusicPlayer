@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2A03 Logisim 播放器 · 详细实施计划 & 可行性审计（供评审）</title>
+<style>
+  :root{
+    --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
+    --line:rgba(80,60,40,.14); --text:#2d2520; --dim:#6a5a4c; --mute:#9a8a78;
+    --accent:#a8410d; --cyan:#2c6770; --red:#8b2820; --green:#4d6b2a; --purple:#5e3677;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI","Noto Sans SC",system-ui,sans-serif;
+       font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 40px 120px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:24px;margin-bottom:8px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+  h1 small{display:block;font-size:14px;color:var(--dim);font-weight:400;margin-top:6px}
+  .meta{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--mute);
+        letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:22px;margin:48px 0 14px;padding-top:8px;border-top:1px solid var(--line);
+     color:var(--accent);letter-spacing:-.01em}
+  h2 .n{font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--mute);margin-right:10px}
+  h3{font-size:17px;margin:26px 0 10px;color:var(--text)}
+  p{margin:10px 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.86em;background:var(--deep);
+       padding:1px 6px;border-radius:3px;color:var(--accent)}
+  strong{color:var(--accent)}
+  em{color:var(--cyan);font-style:normal;font-weight:600}
+  ul,ol{margin:10px 0 14px 22px}
+  li{margin-bottom:6px}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  pre{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+      padding:14px 18px;margin:14px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;
+      line-height:1.65;overflow-x:auto;border-radius:0 6px 6px 0}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+       padding:14px 20px;margin:14px 0;border-radius:0 6px 6px 0}
+  .box.warn{border-left-color:var(--red);background:rgba(139,40,32,.03)}
+  .box.good{border-left-color:var(--green);background:rgba(77,107,42,.04)}
+  .box.review{border-left-color:var(--purple);background:rgba(94,54,119,.04)}
+  .box .t{font-weight:700;margin-bottom:6px}
+  .box.warn .t{color:var(--red)} .box.good .t{color:var(--green)}
+  .box.review .t{color:var(--purple)} .box .t{color:var(--cyan)}
+  .tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10px;padding:2px 8px;
+       border-radius:3px;color:#fff;letter-spacing:.05em;vertical-align:middle}
+  .tag.done{background:var(--green)} .tag.todo{background:var(--accent)}
+  .tag.risk{background:var(--red)} .tag.q{background:var(--purple)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 24px;margin:20px 0 8px}
+  .toc ol{columns:2;column-gap:36px;margin:0;list-style:none}
+  .toc a{color:var(--text);text-decoration:none}
+  .toc a:hover{color:var(--accent)}
+  .toc .n{color:var(--accent);font-family:"JetBrains Mono",monospace;margin-right:8px}
+  footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);color:var(--mute);
+         font-family:"JetBrains Mono",monospace;font-size:11px}
+  .bits{font-family:"JetBrains Mono",monospace;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="meta">Detailed Implementation Plan · For Independent Review · 单刷 · 截稿 2026-06-15</div>
+  <h1>2A03 音乐播放器 — Logisim 详细实施计划 &amp; 可行性审计
+    <small>脚本工具链已完成并验证；本文档锁定硬件层的架构、位宽、风险与排期，供另一位 agent 独立审阅。</small>
+  </h1>
+</header>
+
+<div class="box review">
+  <div class="t">给评审 agent 的话 · READ FIRST</div>
+  <p>本项目是课程大作业：在 <strong>Logisim Evolution v4.1.0</strong>（源码在 <code>ref/logisim-evolution</code>）里搭一个五段 CPU + 基于 Buzzer 的 APU，播放真实 NES 音乐。<strong>离线转换脚本（阶段一/二）已完成并验证通过</strong>；硬件电路<strong>尚未开始</strong>。请重点审阅：</p>
+  <ul>
+    <li><strong>架构是否自洽、能否真的搭出来</strong>（§3 ISA、§4 位宽、§5 CPU、§6 APU）。</li>
+    <li><strong>§8 的风险是否被正确识别</strong>，尤其 <em>Buzzer 在频率快速变化时的性能</em>（“五段=不要求流水线”已向老师确认）。</li>
+    <li><strong>§9 的 10 天排期对单人是否现实</strong>，砍项是否合理。</li>
+    <li>所有标 <span class="tag q">待确认</span> 的开放问题。</li>
+  </ul>
+  <p>文档中凡涉及 Logisim 行为的论断都标注了源码出处，可核对。</p>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><span class="n">1</span><a href="#s1">项目现状与总体架构</a></li>
+    <li><span class="n">2</span><a href="#s2">转换工具链（已完成）</a></li>
+    <li><span class="n">3</span><a href="#s3">指令集架构 ISA（16-bit 定长）</a></li>
+    <li><span class="n">4</span><a href="#s4">完整总线位宽表</a></li>
+    <li><span class="n">5</span><a href="#s5">CPU 详细设计（五段 + ALU）</a></li>
+    <li><span class="n">6</span><a href="#s6">APU 详细设计（4 路 Buzzer）</a></li>
+    <li><span class="n">7</span><a href="#s7">控制面板 / 多曲切换 / 计时</a></li>
+    <li><span class="n">8</span><a href="#s8">可行性审计 &amp; 风险</a></li>
+    <li><span class="n">9</span><a href="#s9">10 天排期</a></li>
+    <li><span class="n">10</span><a href="#s10">对原计划书的勘误</a></li>
+    <li><span class="n">11</span><a href="#s11">开放问题清单（给评审）</a></li>
+  </ol>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="s1"><span class="n">01</span>项目现状与总体架构</h2>
+<p>系统三大块用<em>简单数据格式</em>解耦：</p>
+<pre>
+.nsf ──[阶段一 C++: GME dumper]──> 寄存器日志 ──[阶段二 Py: encode.py]──> ROM .txt ──load──> Logisim 电路
+       运行 6502+2A03，hook 写寄存器        "frame addr val"        16-bit 定长指令         CPU + APU + 控制面板 → Buzzer 出声
+</pre>
+<table>
+  <tr><th>模块</th><th>状态</th><th>说明</th></tr>
+  <tr><td>阶段一 dumper（C++/GME）</td><td><span class="tag done">已完成</span></td><td>hook <code>Nes_Apu::write_register</code>，dump 出每帧寄存器写序列</td></tr>
+  <tr><td>阶段二 encoder（Python）</td><td><span class="tag done">已完成</span></td><td>日志 → 16-bit 定长指令 → Logisim <code>v2.0 raw</code></td></tr>
+  <tr><td>16 首播放列表 ROM + 3 张频率表 ROM</td><td><span class="tag done">已生成并校验</span></td><td>见 §2</td></tr>
+  <tr><td>CPU（五段 + ALU）</td><td><span class="tag todo">待搭</span></td><td>本计划核心，§5</td></tr>
+  <tr><td>APU（4 路 Buzzer）</td><td><span class="tag todo">待搭</span></td><td>§6</td></tr>
+  <tr><td>控制面板 / MUX / 计时</td><td><span class="tag todo">待搭</span></td><td>§7</td></tr>
+</table>
+
+<h3>本地目录结构（评审定位用）</h3>
+<pre>
+Logisim-nsf-MusicPlayer/
+├── data/raw/                       原始 .nsf 示范曲
+│   ├── Monitoring.nsf
+│   └── Final Fantasy III (1990-04-27)(Square).nsf
+├── ref/                            参考仓库（只读）
+│   ├── game-music-emu/             ★ 阶段一 hook 目标（已加 3 处 #ifdef GME_APU_DUMP 补丁）
+│   ├── nsfplay/                    备选 hook 目标（未采用）
+│   └── logisim-evolution/          Logisim v4.1.0 源码（据此核实 Buzzer 行为、ROM 24-bit 上限）
+├── script/                        ← 转换脚本（已完成并验证）
+│   ├── gme_dump/
+│   │   ├── dump_main.cpp           阶段一 dumper 主程序
+│   │   ├── Makefile                g++ 构建（NSF-only 精简）
+│   │   ├── nsfdump.exe             编好的 dumper
+│   │   ├── PATCH.md                GME 改动说明（3 处最小补丁）
+│   │   └── logs/                   寄存器日志（中间产物）
+│   ├── encode.py                   阶段二：日志 → 16-bit 指令 ROM（含“每帧等时”）
+│   ├── make_tables.py              生成频率换算 / 噪声查表 ROM
+│   ├── make_playlist.py            一键构建 16 槽播放列表
+│   └── out/                        ★ 最终产物（直接喂 Logisim）
+│       ├── track00..15.txt         16 首指令 ROM   (addrWidth 16 / dataWidth 16)
+│       ├── freq_pulse.txt          Pulse  timer→Hz (addrWidth 11 / dataWidth 14)
+│       ├── freq_triangle.txt       Tri    timer→Hz
+│       └── freq_noise.txt          Noise  索引→Hz  (addrWidth 4 / dataWidth 14)
+├── plan/
+│   ├── detailed_plan.html          ← 本文档
+│   └── project_brief_v6.html       原始计划书（已加“勘误”框）
+└── coolproject.circ                Logisim 电路（待开始搭建）
+</pre>
+
+<!-- ============ 2 ============ -->
+<h2 id="s2"><span class="n">02</span>转换工具链（已完成，供评审了解输入端）</h2>
+<h3>阶段一：为什么用 GME 而非 NSFPlay</h3>
+<p>GME 的 <code>Nes_Apu::write_register(time,addr,data)</code> 是处理全部 <code>$4000-$4017</code> 写入的<strong>单一函数</strong>，自带 time 参数；NSFPlay 把写寄存器拆在两个文件、无时间戳。对 <code>ref/game-music-emu</code> 做了 3 处 <code>#ifdef GME_APU_DUMP</code> 保护的最小改动（详见 <code>script/gme_dump/PATCH.md</code>）。构建注意：不可用 <code>NSF_EMU_APU_ONLY</code>（MinGW 下堆越界）、<code>emu2413.c</code> 须用 gcc 单独编、需 <code>-DBLARGG_LITTLE_ENDIAN=1</code> 与静态链接。</p>
+<h3>已产出的 ROM 资产（<code>script/out/</code>）</h3>
+<table>
+  <tr><th>文件</th><th>内容</th><th>Logisim ROM 设置</th></tr>
+  <tr><td><code>track00..15.txt</code></td><td>16 首歌的指令流（slot0=Monitoring，slot1=FF3#31，其余 FF3 子曲填充）；每首 4 分钟、dedup</td><td><strong>addrWidth=16, dataWidth=16</strong>（最大 41043 字）</td></tr>
+  <tr><td><code>freq_pulse.txt</code></td><td>Pulse1/2：11-bit timer → 真实 Hz</td><td>addrWidth=11, dataWidth=14</td></tr>
+  <tr><td><code>freq_triangle.txt</code></td><td>Triangle：timer → Hz（低八度）</td><td>addrWidth=11, dataWidth=14</td></tr>
+  <tr><td><code>freq_noise.txt</code></td><td>Noise：<code>$400E</code> 低 4 位索引 → Hz（16 项）</td><td>addrWidth=4, dataWidth=14</td></tr>
+</table>
+<div class="box"><div class="t">关键设计抉择：音高不缩放</div>
+<p>Buzzer 的 Frequency 引脚按<em>真实墙上时间</em>发声（与 Logisim 仿真快慢无关），所以频率表输出<strong>真实 NES Hz</strong>，<strong>不</strong>乘任何“Logisim/NES 时钟比”。只有<em>节奏</em>（WAIT 时长）受仿真时钟影响，靠 CPU 时钟频率 + <code>encode.py --ticks-per-frame</code> 校准。这一点修正了原计划书 S5 的“频率×缩放系数”（那是针对自搓振荡器的）。</p></div>
+
+<!-- ============ 3 ============ -->
+<h2 id="s3"><span class="n">03</span>指令集架构 ISA（16-bit 定长）</h2>
+<p>统一 16-bit 等长指令，<strong>高 4 位 opcode，低 12 位操作数</strong>。定长 = 取指就是 <code>PC→ROM→PC+1</code>，无变长状态机，硬件最简。指令 ROM 字地址、数据 16-bit。</p>
+<table>
+  <tr><th>op</th><th>助记</th><th class="bits">位布局 [15..0]</th><th>语义</th><th>字数</th></tr>
+  <tr><td><code>0x0</code></td><td>WAIT</td><td class="bits">0000 | imm12</td><td>等待 imm12 个时间单位（0–4095）</td><td>1</td></tr>
+  <tr><td><code>0x1</code></td><td>WRITE</td><td class="bits">0001 | reg(4) | val(8)</td><td>APU[reg] = 立即数 val</td><td>1</td></tr>
+  <tr><td><code>0x2</code></td><td>LWAIT</td><td class="bits">0010 | ──── ; 次字=16-bit 等待数</td><td>长等待（&gt;4095 时用；本编码器几乎不产生）</td><td>2</td></tr>
+  <tr><td><code>0x3</code></td><td>WKEY</td><td class="bits">0011 | reg(4) | val(8) ; 次字=MIDI(8)|──</td><td>同 WRITE + 附 MIDI 音符（可视化用，可选）</td><td>2</td></tr>
+  <tr><td><code>0x4</code></td><td>LOADI</td><td class="bits">0100 | Rd(2)|── | imm8</td><td>R[Rd] = 立即数（<strong>ALU 路径</strong>）</td><td>1</td></tr>
+  <tr><td><code>0x5</code></td><td>ADD</td><td class="bits">0101 | Rd(2)|Ra(2)|Rb(2)|──</td><td>R[Rd]=R[Ra]+R[Rb]（<strong>ALU</strong>）</td><td>1</td></tr>
+  <tr><td><code>0x6</code></td><td>SUB</td><td class="bits">0110 | Rd(2)|Ra(2)|Rb(2)|──</td><td>R[Rd]=R[Ra]−R[Rb]（<strong>ALU</strong>）</td><td>1</td></tr>
+  <tr><td><code>0x7</code></td><td>WRITEREG</td><td class="bits">0111 | reg(4) | Rs(2)|──</td><td>APU[reg] = R[Rs]（把算出来的值写进 APU）</td><td>1</td></tr>
+  <tr><td><code>0xF</code></td><td>END</td><td class="bits">1111 | ────</td><td>曲目结束 / 循环点（PC 归零）</td><td>1</td></tr>
+</table>
+<div class="box good"><div class="t">ALU 是老师明确要求（不可砍）</div>
+<p>老师要求“利用 Logisim 搭建 CPU，可自由发挥，<strong>建议实现可控加减运算</strong>”。因此 <code>LOADI/ADD/SUB/WRITEREG</code> + 4 个通用寄存器 R0–R3 + 真 ALU 是<em>核心交付物</em>。注意：自动回放的 ROM 只用到 <code>WAIT/WRITE/END</code> 三条；ALU 指令通过<strong>两种方式</strong>被执行/展示：<br>
+① 一段<strong>手写 demo ROM</strong>（<code>LOADI R0,100 / LOADI R1,50 / ADD R2,R0,R1</code> → R2=150，现场可视化）；<br>
+② 可选：在 <code>encode.py</code> 里加<em>颤音检测</em>，把“连续 ±1 改频率”的模式编码成 <code>LOADI + ADD/SUB + WRITEREG</code>，让真实音乐里也跑 ALU。</p></div>
+
+<h3>WRITE 的 reg(4) → APU 寄存器映射（APU 译码器据此解码）</h3>
+<table>
+  <tr><th>reg_id</th><th>归属</th><th>原 NES 地址</th></tr>
+  <tr><td>0–3</td><td>Pulse 1</td><td>$4000–$4003</td></tr>
+  <tr><td>4–7</td><td>Pulse 2</td><td>$4004–$4007</td></tr>
+  <tr><td>8, 10, 11</td><td>Triangle</td><td>$4008,$400A,$400B</td></tr>
+  <tr><td><strong>9</strong></td><td><strong>声道使能（重映射）</strong></td><td>$4015（低 4 位 = N/T/P2/P1）</td></tr>
+  <tr><td>12, 14, 15</td><td>Noise</td><td>$400C,$400E,$400F</td></tr>
+  <tr><td>13</td><td>未用</td><td>—（$400D 真实未用）</td></tr>
+</table>
+<p><code>$4015</code> 落在 4-bit reg_id（只能 $4000–$400F）之外，借真实 NES 未用的槽 <strong>reg 9</strong>（=$4009）承载；真实 <code>$4009/$400D</code> 写入被编码器丢弃以避免冲突，<code>$4017</code> 丢弃，DMC <code>$4010-$4013</code> 在 dumper 侧已跳过。</p>
+
+<!-- ============ 4 ============ -->
+<h2 id="s4"><span class="n">04</span>完整总线位宽表（照此连线，全程无宽度冲突）</h2>
+<table>
+  <tr><th>信号 / 组件</th><th>位宽</th><th>说明 / 来源</th></tr>
+  <tr><td><strong>PC 寄存器</strong></td><td><strong>16</strong></td><td>数指令条数；最大歌 41043 字 &gt; 4096，故须 16 位（非原计划书的 12）</td></tr>
+  <tr><td>指令 ROM</td><td>addr 16 / data 16</td><td>一条 = 一个 16-bit 字</td></tr>
+  <tr><td>opcode = instr[15:12]</td><td>4</td><td>与 PC 位宽无关</td></tr>
+  <tr><td>WAIT 立即数 = instr[11:0]</td><td>12</td><td></td></tr>
+  <tr><td><strong>WAIT 计数器寄存器</strong></td><td><strong>16</strong></td><td>设 16 位以兼容 LWAIT 的 16-bit 长等待</td></tr>
+  <tr><td>WRITE reg_id = instr[11:8]</td><td>4</td><td>选 16 个 APU 寄存器</td></tr>
+  <tr><td>WRITE value = instr[7:0]</td><td>8</td><td></td></tr>
+  <tr><td>APU 寄存器堆</td><td>16 × 8-bit</td><td>每个独立写使能</td></tr>
+  <tr><td>通道 timer（P1/P2/Tri）</td><td>11</td><td>freq-lo(8)+freq-hi(3) 拼接</td></tr>
+  <tr><td>freq_pulse / freq_triangle ROM</td><td>addr 11 / data 14</td><td>timer → 真实 Hz</td></tr>
+  <tr><td>freq_noise ROM</td><td>addr 4 / data 14</td><td>$400E 低 4 位 → Hz</td></tr>
+  <tr><td>Buzzer FREQ 引脚</td><td>14</td><td><code>Buzzer.java</code> 端口定义；须 20–20000Hz 才出声</td></tr>
+  <tr><td>Buzzer VOL / PW(占空比) / ENABLE</td><td>7(默认) / 8 / 1</td><td>同上</td></tr>
+  <tr><td>通用寄存器 R0–R3 / 选号 / ALU</td><td>8 / 2 / 8</td><td>ALU 做 8-bit ADD/SUB</td></tr>
+  <tr><td>曲目计数器 → 16:1 ROM MUX</td><td>sel 4 / data 16</td><td>上一首/下一首选 ROM</td></tr>
+</table>
+
+<!-- ============ 5 ============ -->
+<h2 id="s5"><span class="n">05</span>CPU 详细设计（单周期五段 + ALU）</h2>
+<p>单周期、五个<em>组合</em>阶段 IF/ID/EX/MEM/WB（非流水线，见 §8 的需求歧义警告）。组件量估计 70–90。</p>
+<h3>数据通路</h3>
+<pre>
+IF : PC ─► 指令ROM(MUX 选当前曲) ─► instr(16)
+ID : opcode=instr[15:12] ─► 控制信号；拆 reg/val/imm/Rd/Ra/Rb
+EX : ┌ WAIT  → 装载/递减 WAIT 计数器，产生 stall
+     ├ ALU   → ADD/SUB(8-bit)，结果 → R[Rd]（LOADI 直接载入）
+     └ 地址  → reg_id
+MEM: ┌ WRITE/WKEY  → APU[reg_id] = val(立即数)      （we = is_write &amp;&amp; !stall）
+     ├ WRITEREG    → APU[reg_id] = R[Rs]            （数据来源 MUX 选择）
+     └ END         → 触发“曲目结束”→ PC=0（循环）
+WB : PC 更新：stall ? 保持 : (END ? 0 : PC+1)；ALU 结果写回 R[Rd]
+</pre>
+
+<div class="box warn"><div class="t">★ 唯一真正的正确性陷阱：WAIT 的 stall 重触发</div>
+<p>WAIT 用“PC 原地不动 + 计数器每周期 −1”实现。陷阱：计数器归零那刻，PC 上<em>还是那条 WAIT</em>，若逻辑是“看到 WAIT 就装载计数器”，下周期会<strong>再次装满 → 死循环</strong>。<br>
+<strong>推荐解法（busy 标志状态机）</strong>：加 1-bit <code>wait_busy</code> 寄存器。<br>
+&nbsp;&nbsp;• <code>busy==0 且 instr==WAIT</code> → 装载计数器 = imm，置 <code>busy=1</code>，PC 不动；<br>
+&nbsp;&nbsp;• <code>busy==1</code> → 计数器 −1；当减到 0 → <code>busy=0</code> 且这一拍 <strong>PC+1</strong>；<br>
+&nbsp;&nbsp;• 其它指令 → 单周期执行，PC+1。<br>
+本质是给单周期 CPU 加一个最小的“多周期指令”状态机。这是必须在纸面审清的一处。</p></div>
+
+<h3>ALU 子电路</h3>
+<p>一个 8-bit 加法器 + 一个 8-bit 减法器 + 一个按 op 选结果的 MUX。<code>LOADI</code> 走旁路直接把立即数送 R[Rd]。验收演示：主电路放 4 个 Hex Digit 显示 R0–R3，现场改 demo ROM 跑加减。</p>
+
+<!-- ============ 6 ============ -->
+<h2 id="s6"><span class="n">06</span>APU 详细设计（4 路 Buzzer 并联）</h2>
+<p>APU = 把 CPU 写进来的寄存器值 → 算频率/音量/使能 → 喂 Buzzer。<strong>不写波形、不写混音</strong>（Buzzer + 系统声卡搞定）。每通道结构一致：寄存器 → 频率换算 ROM → Buzzer。</p>
+<table>
+  <tr><th>通道</th><th>Buzzer 波形</th><th>频率来源</th><th>音量 / 占空比</th></tr>
+  <tr><td>Pulse 1 / 2</td><td>Square</td><td>11-bit timer → <code>freq_pulse</code> ROM</td><td>vol=$4000/$4004 低4位；duty=$4000 bit7-6 → {32,64,128,192}</td></tr>
+  <tr><td>Triangle</td><td>Triangle</td><td>11-bit timer → <code>freq_triangle</code> ROM</td><td>无音量寄存器 → VOL 接常量；使能控响不响</td></tr>
+  <tr><td>Noise</td><td>Noise</td><td>$400E 低4位 → <code>freq_noise</code> ROM（16项）</td><td>vol=$400C 低4位</td></tr>
+</table>
+<p><strong>$4015 使能</strong>：reg 9 低 4 位分别 AND 到 4 个 Buzzer 的 ENABLE。停止/暂停时把 reg 9 写 0（或门控）即可瞬间静音。<strong>4 个 Buzzer 各开一条音频 Clip，系统声卡自动叠加</strong>（已核实，见 §8）。</p>
+
+<!-- ============ 7 ============ -->
+<h2 id="s7"><span class="n">07</span>控制面板 / 多曲切换 / 计时</h2>
+<ul>
+  <li><strong>播放/暂停</strong>：暂停标志 D 触发器门控 CPU 时钟（冻结状态）。</li>
+  <li><strong>停止</strong>：复位 PC=0 + 写 reg9=0 静音。</li>
+  <li><strong>上一首/下一首</strong>：4-bit 曲目计数器 → <strong>16:1 MUX</strong> 选哪个指令 ROM 喂 CPU。每首一个独立 ROM（<code>track00..15.txt</code>），<em>不合并文件</em>。切歌时复位 PC。</li>
+  <li><strong>自动下一首</strong>：计时器到上限（DIP 设 4/5/8 分钟）→ 边沿 → 曲目计数器 +1。</li>
+  <li><strong>计时器</strong>：1Hz 慢时钟 → 秒(0–59)→分，显示 MM:SS；切歌/停止复位。</li>
+  <li><strong>END 信号</strong>：CPU 读到 <code>0xF000</code> → PC 归零，无缝循环当前曲。</li>
+</ul>
+
+<!-- ============ 8 ============ -->
+<h2 id="s8"><span class="n">08</span>可行性审计 &amp; 风险</h2>
+
+<div class="box warn"><div class="t"><span class="tag risk">风险 1</span> Buzzer 在“频率快速变化”时可能卡顿 —— 须 D1 实测</div>
+<p>核对 <code>ref/.../io/extra/Buzzer.java</code>：<br>
+• <strong>每次输入引脚变化触发 <code>propagate</code>，置 <code>updateRequired=true</code></strong>（254 行），后台线程随即<strong>重建整整 1 秒音频缓冲（<code>byte[4*sampleRate]</code> ≈176KB）并重开一个 <code>Clip</code></strong>（386、401 行）。<br>
+• 开发者注释自警：把 4kHz 时钟接 enable 会崩（432 行），并有 <code>Thread.activeCount()&gt;100</code> 保护（433 行）。<br>
+<strong>含义</strong>：长音（参数不变）零开销；但 FF3 这类<em>每帧改频率的颤音</em>会让线程每秒重建几十次缓冲 × 4 路。约 60–240 次/秒，远低于 4kHz 警戒线，<em>大概率可用但可能爆音/卡顿</em>。这正是“单音 OK、真曲子垮”的典型陷阱，<strong>必须先测</strong>。<br>
+<strong>缓解（若卡）</strong>：① 在 Buzzer 输入前加一组采样寄存器，用 ~30–60Hz 慢时钟“按帧采样”再喂（计划书 S9 给可视化用的思路，同样用于声音）；② 在 <code>encode.py</code> 加节流，限制频率更新率（牺牲颤音换流畅）。</p></div>
+
+<div class="box good"><div class="t"><span class="tag done">已确认</span> “五段 CPU” 不要求流水线</div>
+<p>老师已明确：<strong>做到 IF/ID/EX/MEM/WB 五个阶段即可，不要求流水线</strong>（不需处理数据/控制冒险）。本计划的单周期五段方案满足要求，<em>不存在因此推倒重来的风险</em>。（此处原为高危需求歧义，现已澄清并降级。）</p></div>
+
+<div class="box warn"><div class="t"><span class="tag risk">风险 2</span> 节奏等时：每帧耗时须恒定</div>
+<p>当前 <code>encode.py</code> 每帧只补 <code>WAIT 1</code>，但一帧内 WRITE 条数不等（3–20+）→ <strong>每帧实际周期数不等 → 节奏忽快忽慢</strong>。<br>
+<strong>修法</strong>：令 <code>WAIT = 每帧固定预算周期 − 本帧写入条数</code>（预算取 ≥ 最大单帧写入数，如 32），使每帧恒为固定周期。属编码器小改，已识别、待实施。</p></div>
+
+<div class="box good"><div class="t">已核实可行的点</div>
+<ul>
+  <li>Buzzer 引脚（FREQ14/ENABLE1/VOL7/PW8）与波形（Square/Triangle/Noise）齐全，与设计吻合。</li>
+  <li>频率表全部落在 20–20000Hz 内（Pulse≥55、Tri≥27、Noise≥440），不会触发静音。</li>
+  <li>多 Buzzer 各自 <code>AudioSystem.getClip()</code> 独立播放，由系统混音 → 4 路并联成立。</li>
+  <li>ROM/PC/译码都是标准数字逻辑，无特殊依赖；16 首 + 频率表已校验为合法 <code>v2.0 raw</code>。</li>
+  <li>位宽全表自洽（§4）；PC 位宽是可后调属性，非地基。</li>
+</ul></div>
+
+<!-- ============ 9 ============ -->
+<h2 id="s9"><span class="n">09</span>10 天排期（单人，2026-06-05 → 06-15）</h2>
+<table>
+  <tr><th>日</th><th>目标</th><th>优先级</th></tr>
+  <tr><td>D1（今天）</td><td>① Buzzer 压力测试（变频出声流畅否）② 向老师确认“五段”定义</td><td><span class="tag risk">去风险，最高</span></td></tr>
+  <tr><td>D2–3</td><td>单 Pulse 通道 → 4 通道 APU（手动喂寄存器出和声）</td><td>保底</td></tr>
+  <tr><td>D4–6</td><td>CPU 核心（IF/ID/EX/MEM/WB + WAIT-stall busy 机 + WRITE/END）→ 接 APU → 载 1 首 ROM 出音乐</td><td><span class="tag done">保底验收 + 最大亮点</span></td></tr>
+  <tr><td>D7</td><td>ALU 4 条指令 + R0–R3 显示 + demo ROM（<strong>老师硬性要求，不可砍</strong>）</td><td>核心要求</td></tr>
+  <tr><td>D8</td><td>控制面板：暂停/停止 + 16-ROM MUX + 上下一首</td><td>加分</td></tr>
+  <tr><td>D9</td><td>计时器 MM:SS；多曲验证；打磨</td><td>加分</td></tr>
+  <tr><td>D10</td><td>备份、答辩演示脚本、留缓冲</td><td>缓冲</td></tr>
+</table>
+<p><strong>砍项优先级（时间不够时）</strong>：可视化(S9) → 计时器 → 多曲 MUX（退化为手动换 ROM）。<strong>绝不可砍</strong>：五段 CPU、ALU 加减、至少 1 通道出声。</p>
+
+<!-- ============ 10 ============ -->
+<h2 id="s10"><span class="n">10</span>对原计划书 <code>ref/project_brief_v6.html</code> 的勘误</h2>
+<ol>
+  <li><strong>PC 12-bit → 16-bit</strong>：4 分钟曲子最多 41043 条指令 &gt; 4096，12 位会溢出回绕。</li>
+  <li><strong>$4015 → reg 9 重映射</strong>：4-bit reg_id 装不下 $4015，借未用槽 reg 9。</li>
+  <li><strong>音高不缩放</strong>：Buzzer 用真实 Hz；S5 的“频率寄存器值 × 时间缩放系数”仅适用于自搓振荡器，本方案不用。</li>
+  <li><strong>节奏等时</strong>：每帧 WAIT 应补到固定周期预算，而非恒为 1（见 §8 风险 2）。</li>
+  <li><strong>hook 目标改 GME</strong>：原 S5 写 NSFPlay，实际用 game-music-emu（单一 hook 点 + 自带时间戳，构建更顺）。</li>
+</ol>
+
+<!-- ============ 11 ============ -->
+<h2 id="s11"><span class="n">11</span>开放问题清单（请评审重点判断）</h2>
+<ol>
+  <li><span class="tag done">已确认</span> “五段 CPU” <strong>不要求流水线</strong>（老师确认做到五阶段即可）。单周期五段方案成立，此项已关闭。</li>
+  <li><span class="tag q">性能</span> Logisim Buzzer 在 ~60–240 次/秒频率变化下能否流畅？是否需“按帧采样”节流？（§8 风险 1）</li>
+  <li><span class="tag q">性能</span> Logisim 仿真 16-bit CPU + 4 Buzzer，时钟需约 1–2kHz（60 帧/秒 × 每帧 ~30 周期）。仿真器能否稳定维持？</li>
+  <li><span class="tag q">架构</span> WAIT-stall 的 busy 状态机（§5）是否正确、有无更优解？</li>
+  <li><span class="tag q">范围</span> 10 天单人完成“五段+ALU+4通道+控制面板”是否现实？砍项顺序是否合理？</li>
+  <li><span class="tag q">编码</span> 节奏等时修正（§8 风险 2）的预算周期数取多少合适？是否需先统计各曲单帧最大写入数？</li>
+  <li><span class="tag q">ALU 展示</span> <strong>用户正在另外咨询 AI 收集更多 ALU 展示方法（待补充）。</strong> 现有候选：① 手写 demo ROM 现场跑 <code>LOADI/ADD/SUB</code> 并用 Hex Digit 显示 R0–R3；② 真实音乐里用 <code>WRITEREG</code> 跑颤音让 ALU 参与发声。欢迎评审补充更有说服力的展示方式。</li>
+</ol>
+
+<footer>
+  生成于 2026-06-05 · 配套资产：<code>script/out/</code>（16 首 + 3 频率表 ROM）、<code>script/encode.py</code>、<code>script/gme_dump/</code>（dumper + PATCH 说明）· 原计划书：<code>ref/project_brief_v6.html</code>
+</footer>
+
+</div>
+</body>
+</html>

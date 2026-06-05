@@ -1,0 +1,2617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2A03 音乐播放器 · Logisim 项目说明 v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbf9f4;
+    --bg-elevated: #ffffff;
+    --bg-card: #f7f3ec;
+    --bg-deep: #efe9dd;
+    --line: rgba(80, 60, 40, 0.13);
+    --line-strong: rgba(80, 60, 40, 0.28);
+    --text: #2d2520;
+    --text-dim: #6a5a4c;
+    --text-mute: #9a8a78;
+    --accent: #a8410d;
+    --accent-soft: rgba(168, 65, 13, 0.06);
+    --cyan: #2c6770;
+    --cyan-soft: rgba(44, 103, 112, 0.06);
+    --red: #8b2820;
+    --green: #4d6b2a;
+    --purple: #5e3677;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Fraunces', 'Noto Serif SC', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.8;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern", "liga";
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 64px 48px 120px; }
+
+  /* HEADER */
+  header.doc-head {
+    border-bottom: 1px solid var(--line);
+    padding: 0 0 42px 0;
+    margin-bottom: 56px;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 48px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+    color: var(--text);
+  }
+  h1 .accent { color: var(--accent); font-style: italic; font-weight: 400; }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 16px;
+    max-width: 720px;
+    line-height: 1.7;
+    font-weight: 400;
+  }
+  .doc-version {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 11px;
+    letter-spacing: 0.15em;
+    margin-left: 12px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+
+  /* SECTIONS */
+  section { margin: 80px 0; scroll-margin-top: 20px; }
+  .sec-label {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .sec-num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+    font-size: 38px;
+    line-height: 1;
+  }
+  .sec-bar {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .sec-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--text-mute);
+    text-transform: uppercase;
+  }
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.2;
+    margin-bottom: 24px;
+    letter-spacing: -0.015em;
+    color: var(--text);
+  }
+  h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 21px;
+    margin: 38px 0 14px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  h3 .num {
+    color: var(--accent);
+    font-style: italic;
+    font-weight: 400;
+    margin-right: 10px;
+  }
+  h4 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 17px;
+    margin: 22px 0 8px;
+    color: var(--text);
+  }
+  p { margin-bottom: 14px; color: var(--text); }
+  p.lead {
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 26px;
+    font-weight: 400;
+  }
+  strong { color: var(--accent); font-weight: 600; }
+  em { color: var(--cyan); font-style: italic; font-weight: 500; }
+  code {
+    background: var(--bg-deep);
+    padding: 1px 7px;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    border-radius: 3px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    padding: 22px 28px;
+    margin: 18px 0;
+    border-radius: 4px;
+  }
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0;
+  }
+  .card.warning { border-left: 3px solid var(--red); background: rgba(139, 40, 32, 0.025); }
+  .card.warning .card-title { color: var(--red); }
+  .card.info { border-left: 3px solid var(--cyan); background: var(--cyan-soft); }
+  .card.info .card-title { color: var(--cyan); }
+  .card.good { border-left: 3px solid var(--green); background: rgba(77, 107, 42, 0.04); }
+  .card.good .card-title { color: var(--green); }
+
+  ul, ol { margin: 12px 0 18px 0; padding-left: 24px; }
+  li { margin-bottom: 8px; line-height: 1.7; }
+  li::marker { color: var(--accent); }
+
+  /* DIAGRAMS */
+  .diagram {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    padding: 30px 32px 24px;
+    margin: 28px 0;
+    overflow-x: auto;
+    position: relative;
+    border-radius: 4px;
+  }
+  .diagram-label {
+    position: absolute;
+    top: 14px; left: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-mute);
+    letter-spacing: 0.22em;
+  }
+  .diagram-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-mute);
+    margin-top: 18px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin: 20px 0;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+  @media (max-width: 800px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .wrap { padding: 32px 22px 80px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 26px; }
+  }
+
+  /* TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  th {
+    background: var(--bg-card);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  td code { font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+
+  /* TIMELINE */
+  .timeline { margin: 24px 0; position: relative; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    bottom: 14px;
+    width: 1px;
+    background: var(--line);
+  }
+  .tl-item {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 20px;
+    margin-bottom: 22px;
+    align-items: start;
+  }
+  .tl-num {
+    width: 28px; height: 28px;
+    background: var(--bg-elevated);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+    border-radius: 50%;
+  }
+  .tl-content h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 4px;
+  }
+  .tl-content p { font-size: 14px; color: var(--text-dim); margin: 0; }
+
+  /* ROLE CARDS */
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin: 24px 0;
+  }
+  @media (max-width: 720px) { .role-grid { grid-template-columns: 1fr; } }
+  .role {
+    border: 1px solid var(--line);
+    background: var(--bg-elevated);
+    padding: 24px 26px;
+    position: relative;
+    border-radius: 4px;
+  }
+  .role.leader {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .role-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-mute);
+    letter-spacing: 0.22em;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .role.leader .role-name { color: var(--accent); }
+  .role-title {
+    font-family: 'Fraunces', serif;
+    font-size: 21px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+  .role-desc {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    line-height: 1.65;
+  }
+  .role ul {
+    padding-left: 18px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .role li { margin-bottom: 6px; line-height: 1.55; }
+  .role .badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--accent);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 3px 9px;
+    letter-spacing: 0.15em;
+    border-radius: 2px;
+  }
+
+  /* TOC */
+  nav.toc {
+    margin: 36px 0 64px;
+    border: 1px solid var(--line);
+    padding: 28px 32px;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+  }
+  nav.toc h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--text-mute);
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  nav.toc ol {
+    list-style: none;
+    padding-left: 0;
+    columns: 2;
+    column-gap: 40px;
+    margin: 0;
+  }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+  nav.toc li {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    break-inside: avoid;
+  }
+  nav.toc a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.15s;
+    flex: 1;
+  }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc .toc-num {
+    color: var(--accent);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    margin-right: 12px;
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 96px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* SVG */
+  svg .lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--text); }
+  svg .lbl-dim { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--text-mute); }
+  svg .lbl-accent { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--accent); letter-spacing: 0.05em; }
+  svg .title { font-family: 'Fraunces', serif; font-size: 14px; fill: var(--accent); font-weight: 500; }
+  svg .mono-sm { font-family: 'JetBrains Mono', monospace; font-size: 9px; fill: var(--text-dim); }
+
+  /* KEY INSIGHT */
+  .key-insight {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 22px 28px;
+    margin: 24px 0;
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    line-height: 1.65;
+    border-radius: 0 4px 4px 0;
+  }
+  .key-insight::before {
+    content: "关键洞察 · KEY INSIGHT";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  /* PIN TABLE */
+  .pin-table {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    padding: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    margin: 16px 0;
+  }
+  .pin-row {
+    display: grid;
+    grid-template-columns: 130px 100px 1fr;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .pin-row:last-child { border-bottom: none; }
+  .pin-row > div {
+    padding: 13px 18px;
+    border-right: 1px solid var(--line);
+  }
+  .pin-row > div:last-child { border-right: none; }
+  .pin-name {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 12px;
+  }
+  .pin-width {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    font-size: 11px;
+    text-align: center;
+  }
+  .pin-desc { font-size: 13px; color: var(--text-dim); line-height: 1.55; }
+
+  /* CODE BLOCK */
+  pre.code-block {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--cyan);
+    padding: 18px 22px;
+    margin: 18px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text);
+    border-radius: 0 4px 4px 0;
+  }
+  pre.code-block .cmt { color: var(--text-mute); }
+  pre.code-block .kw { color: var(--accent); font-weight: 600; }
+
+  /* FORMULA BOX */
+  .formula {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    padding: 16px 22px;
+    margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    text-align: center;
+    border-radius: 4px;
+    line-height: 1.8;
+  }
+
+  /* MILESTONE */
+  .milestone-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin: 28px 0;
+  }
+  .milestone {
+    border: 1px solid var(--line);
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .milestone-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .milestone-name {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .milestone-name .tag {
+    background: var(--accent);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 9px;
+    letter-spacing: 0.15em;
+    border-radius: 2px;
+  }
+  .milestone-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    letter-spacing: 0.1em;
+  }
+  .milestone-body {
+    padding: 18px 22px;
+  }
+  .milestone-section {
+    margin-bottom: 16px;
+  }
+  .milestone-section:last-child { margin-bottom: 0; }
+  .milestone-section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-mute);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .milestone-section ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13.5px;
+  }
+  .milestone-section li {
+    margin-bottom: 6px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  .demo-criterion {
+    background: rgba(77, 107, 42, 0.06);
+    border-left: 3px solid var(--green);
+    padding: 12px 16px;
+    margin-top: 8px;
+    border-radius: 0 4px 4px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .demo-criterion strong { color: var(--green); }
+
+  /* GANTT */
+  .gantt {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    padding: 24px;
+    margin: 28px 0;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+  .gantt-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .gantt-row.header {
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .gantt-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    text-align: right;
+    padding-right: 8px;
+  }
+  .gantt-bar-container {
+    position: relative;
+    height: 24px;
+    background: var(--bg-card);
+    border-radius: 2px;
+  }
+  .gantt-bar {
+    position: absolute;
+    height: 100%;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .gantt-bar.role-a { background: var(--accent); }
+  .gantt-bar.role-b { background: var(--cyan); }
+  .gantt-bar.role-c { background: var(--purple); }
+  .gantt-bar.role-d { background: var(--green); }
+  .gantt-bar.all { background: var(--text); }
+  .gantt-scale {
+    display: grid;
+    grid-template-columns: repeat(30, 1fr);
+    margin-top: 18px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+  .gantt-scale-day {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-mute);
+  }
+  .gantt-scale-day.weekend { color: var(--accent); }
+  .gantt-scale-day.milestone { color: var(--green); font-weight: 700; }
+  .gantt-scale-day.deadline { color: var(--red); font-weight: 700; }
+
+  /* REFERENCE LINKS */
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 22px 0;
+  }
+  @media (max-width: 720px) { .ref-grid { grid-template-columns: 1fr; } }
+  .ref-card {
+    border: 1px solid var(--line);
+    background: var(--bg-elevated);
+    padding: 18px 22px;
+    border-radius: 4px;
+    transition: border-color 0.15s, background 0.15s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .ref-card:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .ref-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .ref-title {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .ref-desc {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-bottom: 6px;
+  }
+  .ref-url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--cyan);
+    word-break: break-all;
+  }
+  .inline-doc-link {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .inline-doc-link:hover {
+    color: var(--text);
+    border-bottom-style: solid;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc-head">
+  <div class="meta-row">
+    <span>Project Brief</span>
+    <span>2A03 Music Player · Logisim Build</span>
+    <span>Revised · 2026.05.16</span>
+  </div>
+  <h1>在 Logisim 里搭一个<br><span class="accent">能放 NES 音乐</span>的硬件播放器
+    <span class="doc-version">V6 · NSFPlay 直采</span>
+  </h1>
+  <p class="subtitle">
+    用纯数字逻辑电路实现一个 8-bit 音乐播放器：自研五段 CPU + 基于 Logisim Buzzer 的 APU
+    + NSF 文件离线转换工具链。最终能从 Logisim 内置 Buzzer 播放任意开源 NES 游戏音乐，
+    带完整的播放/暂停/切歌/计时控制。
+  </p>
+</header>
+
+<div class="card warning">
+  <div class="card-title">勘误 · ERRATA（2026-06-05 更新，基于实现与可行性审计）</div>
+  <p>本文档为原始计划书 v6。脚本工具链实现完成后，发现以下几处需要事实性修正，<strong>详细说明见 <code>plan/detailed_plan.html</code></strong>（§3 ISA、§4 位宽、§8 风险、§10 勘误）。下列修正<em>不影响第 10 节“四人分工”</em>：</p>
+  <ol>
+    <li><strong>PC 12-bit → 16-bit</strong>：4 分钟曲子最多约 41000 条指令 &gt; 4096，12 位会溢出回绕；指令 ROM 的 Address Bit Width 同步改 16。（本文已就地修正 PC 框与 ROM 配置说明）</li>
+    <li><strong>指令格式</strong>：以第 6 节的 <strong>16-bit 定长</strong>编码为准（高 4 位 opcode）。第 5 节里早期的“字节流”指令表（<code>00 NN</code> / <code>01 RR VV</code> …）已作废，实际脚本输出 16-bit 字。</li>
+    <li><strong>$4015 声道使能 → 重映射到 reg_id 9</strong>：4-bit reg_id 只能寻址 $4000-$400F，借真实 NES 未用的 $4009 槽承载使能。</li>
+    <li><strong>音高不缩放</strong>：第 5 节“频率寄存器值 × 时间缩放系数”仅适用于自搓振荡器；本方案用 Buzzer，其 Frequency 引脚按真实 Hz 发声，频率表直接输出真实 NES Hz。<em>只有节奏(WAIT)需缩放</em>，且采用“每帧固定周期”使节奏均匀。</li>
+    <li><strong>hook 目标</strong>：第 5 节写 NSFPlay，实际采用 <strong>game-music-emu (GME)</strong>（单一 hook 点 <code>Nes_Apu::write_register</code> + 自带时间戳，构建更顺）。</li>
+    <li><strong>“五段 CPU”定义已确认</strong>：老师明确<em>不要求流水线</em>，做到 IF/ID/EX/MEM/WB 五个阶段即可（单周期五段满足）。</li>
+  </ol>
+</div>
+
+<nav class="toc">
+  <h4>目录 · CONTENTS</h4>
+  <ol>
+    <li><a href="#s1"><span><span class="toc-num">01</span>项目目标</span><span>→</span></a></li>
+    <li><a href="#s2"><span><span class="toc-num">02</span>整体架构</span><span>→</span></a></li>
+    <li><a href="#s3"><span><span class="toc-num">03</span>核心思路</span><span>→</span></a></li>
+    <li><a href="#s4"><span><span class="toc-num">04</span>Buzzer 设计规范</span><span>→</span></a></li>
+    <li><a href="#s5"><span><span class="toc-num">05</span>NSF 转换脚本</span><span>→</span></a></li>
+    <li><a href="#s6"><span><span class="toc-num">06</span>CPU 详细设计</span><span>→</span></a></li>
+    <li><a href="#s7"><span><span class="toc-num">07</span>APU 详细设计</span><span>→</span></a></li>
+    <li><a href="#s8"><span><span class="toc-num">08</span>控制面板 & 计时</span><span>→</span></a></li>
+    <li><a href="#s9"><span><span class="toc-num">09</span>可视化预留</span><span>→</span></a></li>
+    <li><a href="#s10"><span><span class="toc-num">10</span>四人分工</span><span>→</span></a></li>
+    <li><a href="#s11"><span><span class="toc-num">11</span>里程碑规划</span><span>→</span></a></li>
+    <li><a href="#s12"><span><span class="toc-num">12</span>参考资料</span><span>→</span></a></li>
+  </ol>
+</nav>
+
+<!-- ============ S1 ============ -->
+<section id="s1">
+  <div class="sec-label">
+    <span class="sec-num">01</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Goal · 目标</span>
+  </div>
+  <h2>项目目标</h2>
+  <p class="lead">
+    在 Logisim Evolution 里搭建一个能播放真实 NES 游戏音乐的"硬件"播放器。
+    输入是开源社区的 <code>.nsf</code> 文件，输出是从 Buzzer 真实发出的音乐声音。
+  </p>
+
+  <h3><span class="num">▸</span>满足的验收要求</h3>
+  <ul>
+    <li><strong>CPU 必须有五个阶段</strong>：取指 (IF) / 译码 (ID) / 执行 (EX) / 访存 (MEM) / 回写 (WB)</li>
+    <li>整个系统在 Logisim Evolution 中可仿真运行</li>
+    <li>所有信号通过数字逻辑实现</li>
+  </ul>
+
+  <h3><span class="num">▸</span>我们想做到的效果</h3>
+  <ul>
+    <li>能播放<strong>多首</strong>开源 NSF 音乐（事先转换好放进 ROM）</li>
+    <li>音色尽量靠近 2A03 原版——不百分百还原，但不能割裂</li>
+    <li>控制面板：<em>播放 / 暂停 / 停止 / 上一首 / 下一首</em></li>
+    <li>计时显示：已播放时长 <code>MM:SS</code></li>
+    <li>预留可视化扩展位（钢琴键盘、进度条等）</li>
+  </ul>
+</section>
+
+<!-- ============ S2 ============ -->
+<section id="s2">
+  <div class="sec-label">
+    <span class="sec-num">02</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Architecture · 架构</span>
+  </div>
+  <h2>整体架构一图流</h2>
+  <p>
+    整个系统分为<strong>三大块</strong>：转换脚本（在电脑上跑）、CPU（在 Logisim 里搭）、APU（在 Logisim 里搭）。
+    它们之间用<em>简单的数据格式</em>解耦，前期可以并行推进。
+  </p>
+
+  <div class="diagram">
+    <div class="diagram-label">FIG. 2.1 · SYSTEM OVERVIEW</div>
+    <svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#a8410d"/>
+        </marker>
+        <marker id="arrow-cyan" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#2c6770"/>
+        </marker>
+        <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#4d6b2a"/>
+        </marker>
+      </defs>
+
+      <rect x="20" y="30" width="280" height="400" fill="none" stroke="#2c6770" stroke-dasharray="4 4" stroke-width="1" opacity="0.6"/>
+      <text x="30" y="50" class="lbl-accent" style="fill:#2c6770;">OFFLINE · 离线（在电脑上）</text>
+
+      <rect x="60" y="80" width="200" height="60" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
+      <text x="160" y="105" class="lbl" text-anchor="middle" style="fill:#2c6770; font-weight:600;">.nsf 文件</text>
+      <text x="160" y="124" class="lbl-dim" text-anchor="middle">开源 NES 音乐</text>
+
+      <line x1="160" y1="145" x2="160" y2="180" stroke="#2c6770" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+
+      <rect x="60" y="185" width="200" height="80" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
+      <text x="160" y="210" class="lbl" text-anchor="middle" style="fill:#2c6770; font-weight:600;">Python 脚本</text>
+      <text x="160" y="228" class="lbl-dim" text-anchor="middle">NSFPlay hook 提取</text>
+      <text x="160" y="246" class="lbl-dim" text-anchor="middle">提取寄存器写入序列</text>
+
+      <line x1="160" y1="270" x2="160" y2="305" stroke="#2c6770" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+
+      <rect x="60" y="310" width="200" height="60" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="160" y="335" class="lbl" text-anchor="middle" style="fill:#a8410d; font-weight:600;">ROM 映像 .txt</text>
+      <text x="160" y="354" class="lbl-dim" text-anchor="middle">Logisim 可加载格式</text>
+
+      <line x1="270" y1="340" x2="370" y2="340" stroke="#a8410d" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#arrow)"/>
+      <text x="320" y="332" class="lbl-accent" text-anchor="middle">LOAD</text>
+
+      <rect x="380" y="30" width="600" height="400" fill="none" stroke="#a8410d" stroke-dasharray="4 4" stroke-width="1" opacity="0.6"/>
+      <text x="390" y="50" class="lbl-accent">LOGISIM · 在仿真器里</text>
+
+      <rect x="400" y="80" width="140" height="60" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="470" y="105" class="lbl" text-anchor="middle" style="font-weight:600;">ROM</text>
+      <text x="470" y="124" class="lbl-dim" text-anchor="middle">乐谱数据</text>
+
+      <rect x="580" y="80" width="180" height="160" fill="#fff" stroke="#a8410d" stroke-width="2"/>
+      <text x="670" y="105" class="title" text-anchor="middle">CPU</text>
+      <text x="670" y="123" class="lbl-dim" text-anchor="middle">五段架构</text>
+      <line x1="600" y1="135" x2="740" y2="135" stroke="#9a8a78" stroke-width="0.5" stroke-dasharray="2 2"/>
+      <text x="670" y="155" class="lbl" text-anchor="middle">IF · 取指</text>
+      <text x="670" y="172" class="lbl" text-anchor="middle">ID · 译码</text>
+      <text x="670" y="189" class="lbl" text-anchor="middle">EX · 执行</text>
+      <text x="670" y="206" class="lbl" text-anchor="middle">MEM · 访存</text>
+      <text x="670" y="223" class="lbl" text-anchor="middle">WB · 回写</text>
+
+      <line x1="540" y1="110" x2="580" y2="110" stroke="#a8410d" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="560" y="103" class="lbl-dim" text-anchor="middle">指令</text>
+
+      <rect x="800" y="80" width="160" height="220" fill="#fff" stroke="#a8410d" stroke-width="2"/>
+      <text x="880" y="105" class="title" text-anchor="middle">APU</text>
+      <text x="880" y="123" class="lbl-dim" text-anchor="middle">4 路 Buzzer</text>
+      <line x1="820" y1="135" x2="940" y2="135" stroke="#9a8a78" stroke-width="0.5" stroke-dasharray="2 2"/>
+      <text x="880" y="155" class="lbl" text-anchor="middle">🔊 Pulse 1</text>
+      <text x="880" y="175" class="lbl" text-anchor="middle">🔊 Pulse 2</text>
+      <text x="880" y="195" class="lbl" text-anchor="middle">🔊 Triangle</text>
+      <text x="880" y="215" class="lbl" text-anchor="middle">🔊 Noise</text>
+      <text x="880" y="240" class="mono-sm" text-anchor="middle">— 系统声卡自动混音 —</text>
+      <text x="880" y="265" class="lbl" text-anchor="middle" style="fill:#4d6b2a;">→ OUTPUT</text>
+
+      <line x1="760" y1="160" x2="800" y2="160" stroke="#a8410d" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="780" y="153" class="lbl-dim" text-anchor="middle">MMIO</text>
+
+      <rect x="800" y="335" width="160" height="50" fill="#fff" stroke="#4d6b2a" stroke-width="2"/>
+      <text x="880" y="358" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-weight:600;">🎵 系统声音</text>
+      <text x="880" y="375" class="lbl-dim" text-anchor="middle">从电脑扬声器输出</text>
+
+      <line x1="880" y1="300" x2="880" y2="335" stroke="#4d6b2a" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+      <rect x="400" y="270" width="140" height="80" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
+      <text x="470" y="293" class="lbl" text-anchor="middle" style="fill:#5e3677; font-weight:600;">控制面板</text>
+      <text x="470" y="312" class="lbl-dim" text-anchor="middle">播放 / 暂停</text>
+      <text x="470" y="328" class="lbl-dim" text-anchor="middle">上下首 / 停止</text>
+      <text x="470" y="344" class="lbl-dim" text-anchor="middle">计时器</text>
+
+      <line x1="540" y1="290" x2="580" y2="200" stroke="#5e3677" stroke-width="1" stroke-dasharray="3 3"/>
+
+      <rect x="400" y="370" width="380" height="50" fill="#fff" stroke="#9a8a78" stroke-width="1" stroke-dasharray="4 4"/>
+      <text x="590" y="395" class="lbl-dim" text-anchor="middle" style="font-style:italic;">Display 子电路（占位）</text>
+      <text x="590" y="412" class="lbl-dim" text-anchor="middle" style="font-size:9px;">钢琴 / 计时显示 / 进度条 — 后期填充</text>
+    </svg>
+    <div class="diagram-caption">FIG 2.1 · 三大块解耦：脚本管"曲谱"，CPU 管"读谱"，APU 管"发声"</div>
+  </div>
+</section>
+
+<!-- ============ S3 ============ -->
+<section id="s3">
+  <div class="sec-label">
+    <span class="sec-num">03</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Core Idea · 核心思路</span>
+  </div>
+  <h2>最重要的两个想法</h2>
+
+  <div class="key-insight">
+    <strong>想法一：</strong>我们的 CPU <em>不需要真的运行 NES 的 6502 代码</em>。
+    Python 脚本在电脑上离线把 NSF "跑一遍"，录下它对音频芯片的所有寄存器写入，
+    变成一个简单的数据序列。Logisim 里的 CPU 只负责按时序回放这个序列就行。
+  </div>
+
+  <p>这个区别非常关键，决定了整个项目的复杂度：</p>
+
+  <div class="two-col">
+    <div class="card warning">
+      <div class="card-title">❌ 错误思路</div>
+      <p style="font-size:13px;">
+        在 Logisim 里完整实现一个 6502 CPU，加载真实的 NSF 文件，
+        让它像真 NES 一样运行 6502 程序。
+      </p>
+      <p style="font-size:12.5px; color: var(--text-dim); margin-top:10px;">
+        → 需要 56 条指令、bank switching、NMI 中断处理…<br>
+        → 工作量爆炸，作业要求只是"五段 CPU"
+      </p>
+    </div>
+    <div class="card good">
+      <div class="card-title">✅ 我们的思路</div>
+      <p style="font-size:13px;">
+        Python 脚本把 NSF 转成"等待 N 拍 → 写寄存器 R = V"这种简单的指令流。
+        Logisim CPU 只需要 9 条<em>自定义指令</em>就能跑（含基本加减运算）。
+      </p>
+      <p style="font-size:12.5px; color: var(--text-dim); margin-top:10px;">
+        → CPU 精简但功能完整，约 70-90 个组件<br>
+        → 五段流程清晰，ALU 真能算，验收时好讲
+      </p>
+    </div>
+  </div>
+
+  <div class="key-insight">
+    <strong>想法二：</strong>充分利用 Logisim Buzzer 已有的波形生成能力，
+    <em>不自己搓波形</em>。Buzzer 内置 square / triangle / noise 都能用，
+    APU 部分只做"寄存器解析 + 频率换算 + 通道使能"，
+    把工作量集中在真正有教学意义的地方（CPU 五段架构）。
+  </div>
+
+  <h3><span class="num">▸</span>关于 DMC 通道为什么砍掉</h3>
+  <p>
+    真实 2A03 有<strong>五个</strong>发声通道：Pulse×2、Triangle、Noise，以及 <code>DMC</code>（Delta Modulation Channel）。
+  </p>
+  <p>
+    DMC 不是发声器，而是<em>1-bit DPCM 采样回放通道</em>——它能播放<strong>预先录制好的任何声音</strong>：
+    鼓点、人声、采样乐器都行。NES 游戏里那些"语音喊叫"或"真实鼓声"都是用它做的。
+    但 NES 卡带空间极小，DMC 的<strong>采样率低、采样长度短</strong>，所以听起来很糙。
+  </p>
+  <p>
+    在 Logisim 里实现 DMC 需要：DPCM 解码器 + 独立的 ROM 访问通道 + 字节缓冲器，
+    工作量大约占整个 APU 的 30%，而且效果有限。
+  </p>
+  <div class="card good">
+    <div class="card-title">我们的决策：砍掉 DMC</div>
+    <p>转换脚本检测到 NSF 使用 DMC 寄存器（<code>$4010–$4013</code>）时，直接跳过这些写入。
+    损失的是"鼓点和人声采样"，保留的是"主旋律 + 和声 + 噪声鼓点"——大部分 NES 音乐听感损失有限。</p>
+  </div>
+
+  <h3><span class="num">▸</span>关于 Triangle 通道为什么不搓 32 步阶梯</h3>
+  <p>
+    真实 2A03 的三角波是 32 步阶梯（4-bit 量化），听起来有"颗粒感"，是 NES 经典音色之一。
+    很多教程会建议在 Logisim 里自己搓出这个阶梯。
+  </p>
+  <p>
+    但我们经过讨论决定<strong>不搓阶梯，直接用 Buzzer 的 triangle 波形</strong>，理由如下：
+  </p>
+  <ul>
+    <li>NSF 数据里只写"频率"和"使能"，<em>不指定波形形状</em>——波形是 2A03 硬件写死的</li>
+    <li>2A03 输出阶梯是因为它<em>硬件能力受限</em>，并不是"音乐家想要的音色"</li>
+    <li>平滑三角波理论上音色更纯净，不会"对不上数据"——只是音色偏向不同</li>
+    <li>搓 32 步阶梯需要额外 ~30 个组件，工作量与教学价值不成比例</li>
+  </ul>
+  <div class="card good">
+    <div class="card-title">决策：Triangle/Noise 直接用 Buzzer 自带波形</div>
+    <p>
+      代价：硬核 NES 玩家在低音区能听出"太干净了"。<br>
+      收益：APU 工作量大幅压缩，时间投入到 CPU 和扩展功能上。<br>
+      符合我们"不百分百还原也没关系，但不能割裂"的目标。
+    </p>
+  </div>
+</section>
+
+<!-- ============ S4 ============ -->
+<section id="s4">
+  <div class="sec-label">
+    <span class="sec-num">04</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Buzzer Spec · 蜂鸣器规范</span>
+  </div>
+  <h2>Logisim Buzzer 设计规范</h2>
+  <p class="lead">
+    这是整个系统的<strong>声音出口</strong>。我们的 APU 设计就是围绕 Buzzer 的能力展开的。
+  </p>
+
+  <h3><span class="num">▸</span>引脚定义</h3>
+  <p>Logisim Evolution 的 Buzzer 组件（位于 <code>I/O Extra</code> 库）有以下输入引脚：</p>
+
+  <div class="pin-table">
+    <div class="pin-row" style="background: var(--bg-card);">
+      <div class="pin-name" style="color: var(--text);">引脚 PIN</div>
+      <div class="pin-width" style="color: var(--text);">位宽</div>
+      <div class="pin-desc" style="color: var(--text); font-weight:600;">功能描述</div>
+    </div>
+    <div class="pin-row">
+      <div class="pin-name">Frequency</div>
+      <div class="pin-width">14-bit</div>
+      <div class="pin-desc">无符号频率值，单位 Hz 或 dHz（属性可配）。<br>有效范围 <strong>20 Hz – 20,000 Hz</strong></div>
+    </div>
+    <div class="pin-row">
+      <div class="pin-name">Volume</div>
+      <div class="pin-width">可配置</div>
+      <div class="pin-desc">无符号音量值，位宽由属性 <code>Volume Width</code> 决定（常用 7-bit 或 8-bit）</div>
+    </div>
+    <div class="pin-row">
+      <div class="pin-name">Duty Cycle</div>
+      <div class="pin-width">8-bit</div>
+      <div class="pin-desc">占空比，仅对方波有意义。0–255 映射到 0%–100%</div>
+    </div>
+    <div class="pin-row">
+      <div class="pin-name">Select (Enable)</div>
+      <div class="pin-width">1-bit</div>
+      <div class="pin-desc">1 = 发声，0 = 静音。<strong>暂停/停止/通道禁用时拉低这一位</strong></div>
+    </div>
+  </div>
+
+  <h3><span class="num">▸</span>波形属性的选择</h3>
+  <div class="three-col">
+    <div class="card">
+      <div class="card-title">Square 方波</div>
+      <p style="font-size:13px; color:var(--text-dim);">可配占空比。给 <strong>Pulse 1 + Pulse 2</strong> 用。</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Triangle 三角波</div>
+      <p style="font-size:13px; color:var(--text-dim);">数学三角波，比 2A03 阶梯更纯净。给 <strong>Triangle</strong> 用。</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Noise 白噪声</div>
+      <p style="font-size:13px; color:var(--text-dim);">Java <code>Random</code> 生成，与 2A03 LFSR 不同序列但听感都是噪声。给 <strong>Noise</strong> 用。</p>
+    </div>
+  </div>
+
+  <h3><span class="num">▸</span>关键设计：4 路 Buzzer 并联</h3>
+  <div class="card info">
+    <div class="card-title">多通道并联自动混音</div>
+    <p>
+      Logisim 的 Buzzer 输出到系统声卡，<strong>多个 Buzzer 同时响时，声卡会自动叠加它们的声音</strong>——
+      这就是天然的混音器，不需要我们自己搭加法器。<br><br>
+      所以我们的 APU 设计变得非常简洁：<em>每个通道一个 Buzzer，4 个 Buzzer 并联，分别接收各自的频率/音量/使能信号</em>。
+    </p>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">FIG. 4.1 · BUZZER ARRAY</div>
+    <svg viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="ar-bz" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#a8410d"/>
+        </marker>
+        <marker id="ar-bz-g" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#4d6b2a"/>
+        </marker>
+      </defs>
+
+      <!-- APU register decoder -->
+      <rect x="40" y="40" width="180" height="240" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="130" y="65" class="title" text-anchor="middle">APU 寄存器组</text>
+      <text x="130" y="83" class="lbl-dim" text-anchor="middle" style="font-size:10px;">来自 CPU 的 MMIO 写入</text>
+      <line x1="60" y1="95" x2="200" y2="95" stroke="#9a8a78" stroke-width="0.5" stroke-dasharray="2 2"/>
+      <text x="130" y="115" class="lbl" text-anchor="middle" style="font-size:10px;">$4000-$4003 P1</text>
+      <text x="130" y="135" class="lbl" text-anchor="middle" style="font-size:10px;">$4004-$4007 P2</text>
+      <text x="130" y="155" class="lbl" text-anchor="middle" style="font-size:10px;">$4008-$400B Tri</text>
+      <text x="130" y="175" class="lbl" text-anchor="middle" style="font-size:10px;">$400C-$400F Noise</text>
+      <text x="130" y="200" class="lbl" text-anchor="middle" style="font-size:10px;">$4015 通道使能</text>
+      <text x="130" y="225" class="lbl-dim" text-anchor="middle" style="font-size:9px;">每组 = D 触发器</text>
+      <text x="130" y="245" class="lbl-dim" text-anchor="middle" style="font-size:9px;">+ 频率换算逻辑</text>
+      <text x="130" y="265" class="lbl-dim" text-anchor="middle" style="font-size:9px;">+ 通道使能门控</text>
+
+      <!-- Pulse 1 -->
+      <line x1="220" y1="75" x2="270" y2="75" stroke="#a8410d" stroke-width="1.2" marker-end="url(#ar-bz)"/>
+      <rect x="270" y="55" width="280" height="50" fill="#fbf9f4" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="295" y="75" class="lbl" style="font-weight:600;">Buzzer 1</text>
+      <text x="295" y="92" class="lbl-dim" style="font-size:9px;">freq + duty + en</text>
+      <text x="430" y="80" class="lbl-dim" style="font-size:10px; fill:#a8410d;">▸ Pulse 1 (square)</text>
+      <text x="430" y="96" class="lbl-dim" style="font-size:9px;">waveform: square</text>
+
+      <!-- Pulse 2 -->
+      <line x1="220" y1="115" x2="270" y2="115" stroke="#a8410d" stroke-width="1.2" marker-end="url(#ar-bz)"/>
+      <rect x="270" y="115" width="280" height="50" fill="#fbf9f4" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="295" y="135" class="lbl" style="font-weight:600;">Buzzer 2</text>
+      <text x="295" y="152" class="lbl-dim" style="font-size:9px;">freq + duty + en</text>
+      <text x="430" y="140" class="lbl-dim" style="font-size:10px; fill:#a8410d;">▸ Pulse 2 (square)</text>
+      <text x="430" y="156" class="lbl-dim" style="font-size:9px;">waveform: square</text>
+
+      <!-- Triangle -->
+      <line x1="220" y1="180" x2="270" y2="180" stroke="#a8410d" stroke-width="1.2" marker-end="url(#ar-bz)"/>
+      <rect x="270" y="175" width="280" height="50" fill="#fbf9f4" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="295" y="195" class="lbl" style="font-weight:600;">Buzzer 3</text>
+      <text x="295" y="212" class="lbl-dim" style="font-size:9px;">freq + en</text>
+      <text x="430" y="200" class="lbl-dim" style="font-size:10px; fill:#a8410d;">▸ Triangle (triangle)</text>
+      <text x="430" y="216" class="lbl-dim" style="font-size:9px;">waveform: triangle</text>
+
+      <!-- Noise -->
+      <line x1="220" y1="245" x2="270" y2="245" stroke="#a8410d" stroke-width="1.2" marker-end="url(#ar-bz)"/>
+      <rect x="270" y="235" width="280" height="50" fill="#fbf9f4" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="295" y="255" class="lbl" style="font-weight:600;">Buzzer 4</text>
+      <text x="295" y="272" class="lbl-dim" style="font-size:9px;">freq + en (随机基频)</text>
+      <text x="430" y="260" class="lbl-dim" style="font-size:10px; fill:#a8410d;">▸ Noise (noise)</text>
+      <text x="430" y="276" class="lbl-dim" style="font-size:9px;">waveform: noise</text>
+
+      <!-- Sound system -->
+      <rect x="600" y="120" width="200" height="80" fill="#fff" stroke="#4d6b2a" stroke-width="2"/>
+      <text x="700" y="148" class="title" text-anchor="middle" style="fill:#4d6b2a;">系统声卡</text>
+      <text x="700" y="170" class="lbl" text-anchor="middle" style="font-size:11px;">自动叠加四路声音</text>
+      <text x="700" y="186" class="lbl-dim" text-anchor="middle" style="font-size:10px;">= 天然混音器</text>
+
+      <line x1="550" y1="80" x2="600" y2="140" stroke="#4d6b2a" stroke-width="1.2" marker-end="url(#ar-bz-g)"/>
+      <line x1="550" y1="140" x2="600" y2="150" stroke="#4d6b2a" stroke-width="1.2" marker-end="url(#ar-bz-g)"/>
+      <line x1="550" y1="200" x2="600" y2="170" stroke="#4d6b2a" stroke-width="1.2" marker-end="url(#ar-bz-g)"/>
+      <line x1="550" y1="260" x2="600" y2="180" stroke="#4d6b2a" stroke-width="1.2" marker-end="url(#ar-bz-g)"/>
+
+      <line x1="800" y1="160" x2="860" y2="160" stroke="#4d6b2a" stroke-width="2" marker-end="url(#ar-bz-g)"/>
+
+      <text x="900" y="155" class="lbl" text-anchor="middle" style="font-size:24px;">🎵</text>
+      <text x="900" y="180" class="lbl-dim" text-anchor="middle" style="font-size:10px;">合成音乐</text>
+    </svg>
+    <div class="diagram-caption">FIG 4.1 · 四路 Buzzer 并联，系统声卡自动混音——不需要自己搭加法器</div>
+  </div>
+</section>
+
+<!-- ============ S5 ============ -->
+<section id="s5">
+  <div class="sec-label">
+    <span class="sec-num">05</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Script · 转换脚本</span>
+  </div>
+  <h2>NSF 转换脚本</h2>
+  <p>用 Python 写，在电脑上运行，不进 Logisim。负责把 <code>.nsf</code> 文件转成 ROM 映像。</p>
+
+  <h3><span class="num">▸</span>工作流程（两阶段）</h3>
+  <p>分两段：<strong>阶段一</strong>改 NSFPlay 源码 hook 出寄存器写入日志（C++）；
+  <strong>阶段二</strong>用 Python 把日志编码成 ROM 映像。</p>
+  <div class="diagram">
+    <div class="diagram-label">FIG. 5.1 · TOOLCHAIN</div>
+    <svg viewBox="0 0 1000 240" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="ar3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#2c6770"/>
+        </marker>
+        <marker id="ar3o" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#a8410d"/>
+        </marker>
+      </defs>
+
+      <!-- stage 1 box -->
+      <rect x="20" y="30" width="490" height="180" fill="none" stroke="#5e3677" stroke-dasharray="4 4" stroke-width="1" opacity="0.6"/>
+      <text x="30" y="50" class="lbl-accent" style="fill:#5e3677;">阶段一 · 改 NSFPlay（C++，一次性）</text>
+
+      <rect x="40" y="80" width="120" height="70" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
+      <text x="100" y="108" class="lbl" text-anchor="middle" style="font-weight:600;">.nsf 文件</text>
+      <text x="100" y="126" class="lbl-dim" text-anchor="middle" style="font-size:9px;">示范歌曲</text>
+
+      <line x1="160" y1="115" x2="200" y2="115" stroke="#2c6770" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+      <rect x="200" y="75" width="150" height="80" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
+      <text x="275" y="100" class="lbl" text-anchor="middle" style="fill:#5e3677; font-weight:600;">NSFPlay</text>
+      <text x="275" y="118" class="lbl-dim" text-anchor="middle" style="font-size:9px;">(已克隆，加 log)</text>
+      <text x="275" y="134" class="lbl-dim" text-anchor="middle" style="font-size:9px;">hook APU::Write</text>
+
+      <line x1="350" y1="115" x2="390" y2="115" stroke="#2c6770" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+      <rect x="390" y="80" width="110" height="70" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
+      <text x="445" y="105" class="lbl" text-anchor="middle">reg log</text>
+      <text x="445" y="123" class="lbl-dim" text-anchor="middle" style="font-size:9px;">frame addr val</text>
+      <text x="445" y="137" class="lbl-dim" text-anchor="middle" style="font-size:9px;">纯文本</text>
+
+      <!-- stage 2 box -->
+      <rect x="530" y="30" width="450" height="180" fill="none" stroke="#a8410d" stroke-dasharray="4 4" stroke-width="1" opacity="0.6"/>
+      <text x="540" y="50" class="lbl-accent">阶段二 · Python 转换（我们写）</text>
+
+      <line x1="500" y1="115" x2="555" y2="115" stroke="#a8410d" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#ar3o)"/>
+
+      <rect x="555" y="75" width="170" height="80" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="640" y="100" class="lbl" text-anchor="middle" style="font-weight:600;">Python 转换</text>
+      <text x="640" y="118" class="lbl-dim" text-anchor="middle" style="font-size:9px;">解析 log + 编码</text>
+      <text x="640" y="132" class="lbl-dim" text-anchor="middle" style="font-size:9px;">时钟/频率缩放 + DMC 跳过</text>
+
+      <line x1="725" y1="115" x2="765" y2="115" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar3o)"/>
+
+      <rect x="765" y="80" width="135" height="70" fill="#fff" stroke="#a8410d" stroke-width="2"/>
+      <text x="832" y="105" class="lbl" text-anchor="middle" style="fill:#a8410d; font-weight:600;">ROM .txt</text>
+      <text x="832" y="125" class="lbl-dim" text-anchor="middle" style="font-size:9px;">Logisim v2.0 raw</text>
+      <text x="832" y="139" class="lbl-dim" text-anchor="middle" style="font-size:9px;">每首一个</text>
+
+      <text x="500" y="195" class="lbl-dim" text-anchor="middle" style="font-size:10px;">关键：寄存器序列来自真实 APU 模拟器（经验证），不用自己实现 6502，没有隐藏 bug</text>
+    </svg>
+    <div class="diagram-caption">FIG 5.1 · 直接 hook NSFPlay 的 APU 写寄存器函数——比绕 VGM 少两次格式转换</div>
+  </div>
+
+  <div class="card info">
+    <div class="card-title">为什么不绕 VGM？</div>
+    <p>
+      早期方案想走 <code>NSF → VGM → ROM</code>，但 VGM 是<em>另一种文件格式</em>，要先转 VGM（需额外工具）再解析 VGM（再写代码），<strong>两次转换两个格式</strong>。<br>
+      而 NSFPlay 内部本来就在做"运行 6502 → 写 APU 寄存器"这件事——<strong>直接在它写寄存器的函数加一行 log</strong>，一步拿到我们要的序列。既然已经克隆了 NSFPlay，这是最短路径。
+    </p>
+  </div>
+
+  <h3><span class="num">▸</span>自定义指令格式</h3>
+  <p>分两类：<strong>回放类</strong>（等待 / 写寄存器 / 结束）和<strong>运算类</strong>（加载 / 加 / 减 / 寄存器写）。
+  运算类指令让 CPU 的 ALU 真正参与计算，主要用来实现颤音、音量渐变等效果。</p>
+  <table>
+    <thead>
+      <tr><th>Opcode</th><th>格式（字节）</th><th>语义</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>0x00</code></td><td><code>00 NN</code></td><td>WAIT — 等待 NN 个时间单位（最长 255）</td></tr>
+      <tr><td><code>0x01</code></td><td><code>01 RR VV</code></td><td>WRITE — 写 APU 寄存器 RR = 立即数 VV</td></tr>
+      <tr><td><code>0x02</code></td><td><code>02 RR VV KK</code></td><td>WKEY — 同上 + 附 MIDI 音符号 KK（可视化用）</td></tr>
+      <tr><td><code>0x03</code></td><td><code>03 NN NN</code></td><td>LWAIT — 长等待（16-bit 时间，最长 65535）</td></tr>
+      <tr><td><code>0x04</code></td><td><code>04 Rd VV</code></td><td><strong>LOADI</strong> — 通用寄存器 R[Rd] = 立即数 VV</td></tr>
+      <tr><td><code>0x05</code></td><td><code>05 Rd Ra Rb</code></td><td><strong>ADD</strong> — R[Rd] = R[Ra] + R[Rb]（经 ALU）</td></tr>
+      <tr><td><code>0x06</code></td><td><code>06 Rd Ra Rb</code></td><td><strong>SUB</strong> — R[Rd] = R[Ra] − R[Rb]（经 ALU）</td></tr>
+      <tr><td><code>0x07</code></td><td><code>07 RR Rs</code></td><td><strong>WRITEREG</strong> — 写 APU 寄存器 RR = 通用寄存器 R[Rs]</td></tr>
+      <tr><td><code>0xFF</code></td><td><code>FF</code></td><td>END — 曲目结束 / 循环点</td></tr>
+    </tbody>
+  </table>
+
+  <pre class="code-block"><span class="cmt"># ROM 示例 1：直接回放（最常见，不用 ALU）</span>
+01 00 9F      <span class="cmt"># WRITE Pulse1 控制 = 0x9F（音量+占空比）</span>
+01 02 AA      <span class="cmt"># WRITE Pulse1 频率低 = 0xAA</span>
+01 03 00      <span class="cmt"># WRITE Pulse1 频率高 = 0x00 → 触发发声</span>
+03 04 00      <span class="cmt"># LWAIT 1024 个周期（约 1/4 拍）</span>
+...
+
+<span class="cmt"># ROM 示例 2：颤音效果（用 ALU 加减）</span>
+04 00 AA      <span class="cmt"># LOADI R0 = 0xAA（基频）</span>
+04 01 01      <span class="cmt"># LOADI R1 = 1（颤音步长）</span>
+07 02 00      <span class="cmt"># WRITEREG Pulse1_freq_lo = R0</span>
+00 32         <span class="cmt"># WAIT 50</span>
+05 00 00 01   <span class="cmt"># ADD R0 = R0 + R1（频率 +1）</span>
+07 02 00      <span class="cmt"># WRITEREG Pulse1_freq_lo = R0</span>
+00 32         <span class="cmt"># WAIT 50</span>
+06 00 00 01   <span class="cmt"># SUB R0 = R0 - R1（频率回落）</span>
+...
+FF            <span class="cmt"># END</span></pre>
+
+  <div class="card info">
+    <div class="card-title">脚本怎么用上 ADD/SUB？</div>
+    <p>
+      B 不需要复杂分析。最简单的策略：<strong>检测连续两次写同一寄存器、值差为 ±1/±2 的模式</strong>，
+      就改用 LOADI + ADD/SUB 来生成（典型的颤音、音量渐变）。其余情况仍用直接 WRITE。<br>
+      只要生成的 ROM 里<em>能找到 ADD/SUB 指令</em>、跑起来 ALU 确实在算，就达到了"CPU 有运算能力"的要求。
+    </p>
+  </div>
+
+  <div class="card warning">
+    <div class="card-title">时钟速度的坑（必须处理！）</div>
+    <p>
+      Logisim 实际时钟跑得很慢（最快也就几 kHz），<strong>无法跑到 NES 的 1.79 MHz</strong>。
+      脚本里必须按比例<em>缩放</em>：
+    </p>
+    <div class="formula">
+      时间缩放系数 = Logisim 实测频率 / NES_CPU_FREQ (1.79 MHz)<br>
+      频率寄存器值 = 原值 × 时间缩放系数
+    </div>
+    <p style="font-size:13px; color:var(--text-dim);">
+      时间值和频率值要<strong>同时缩放</strong>，否则会"节奏对了音高错"或反过来。
+      调试时先做"音高正确但慢放"版本验证电路，再调到合适速度。
+    </p>
+  </div>
+
+  <h3><span class="num">▸</span>仓库结构</h3>
+  <pre class="code-block">Logisim-nsf-Player/
+├── ref/                      <span class="cmt"># 参考仓库（只读，不改）</span>
+│   ├── nsfplay/              <span class="cmt"># 主 hook 目标</span>
+│   ├── game-music-emu/       <span class="cmt"># 备选 hook 目标</span>
+│   ├── logisim-evolution/    <span class="cmt"># Logisim 本体源码</span>
+│   └── logisim-nes-audio/    <span class="cmt"># 别人的 NES 音频 Logisim 参考</span>
+├── data/
+│   └── raw/                  <span class="cmt"># 原始 .nsf 示范曲</span>
+├── script/                   <span class="cmt"># B 组：转换脚本</span>
+│   ├── nsfplay_patch/        <span class="cmt"># 给 NSFPlay 的 log hook 补丁</span>
+│   ├── parse_log.py          <span class="cmt"># 解析 reg log</span>
+│   ├── encode.py             <span class="cmt"># 编码成自定义指令 + 缩放</span>
+│   └── out/                  <span class="cmt"># 生成的 ROM .txt</span>
+└── circuits/                 <span class="cmt"># Logisim 电路（按子电路分文件，避免冲突）</span>
+    ├── top.circ              <span class="cmt"># A：顶层 + 控制面板 + Display</span>
+    ├── cpu.circ              <span class="cmt"># C：CPU 五段</span>
+    └── apu.circ              <span class="cmt"># D：APU 4 通道</span></pre>
+
+  <div class="card warning">
+    <div class="card-title">Logisim 协作铁律：一个 .circ 一个人改</div>
+    <p>
+      <code>.circ</code> 是 XML，<strong>无法 merge</strong>——两人同改同一个电路，git 冲突解不了。所以：<br>
+      <strong>每个 .circ 只有一个负责人提交</strong>（top→A、cpu→C、apu→D），其他人只读。<br>
+      主电路通过 <code>Project → Load Library</code> 加载另外两个 .circ，<em>只要子电路对外端口不变，内部随便改不影响别人</em>。
+      重要修改前手动备份一份（<code>cpu_0524.circ</code>），别只依赖 git——XML 损坏 git 也难恢复。
+    </p>
+  </div>
+</section>
+
+<!-- ============ S6 CPU ============ -->
+<section id="s6">
+  <div class="sec-label">
+    <span class="sec-num">06</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">CPU · 详细设计</span>
+  </div>
+  <h2>CPU 详细设计</h2>
+  <p class="lead">
+    自研单周期五段 CPU。<strong>不用开源 6502</strong>——作业要求是"五段架构"而不是"能跑 NES 的 CPU"，
+    自己搓的精简版更符合验收要求。除了回放指令，还<strong>带一个真正的 ALU（支持加减）和 4 个通用寄存器</strong>，
+    保证 CPU 具备基本运算能力。
+  </p>
+
+  <h3><span class="num">▸</span>指令编码（16-bit 等长指令）</h3>
+  <p>为了简化译码电路，统一用 16-bit 等长指令。高 4 位是 opcode，低 12 位是操作数。
+  指令分两组：<strong>回放类</strong>（橙色 op）和<strong>运算类</strong>（青色 op，让 ALU 参与计算）。</p>
+
+  <div class="diagram">
+    <div class="diagram-label">FIG. 6.1 · INSTRUCTION ENCODING</div>
+    <svg viewBox="0 0 1000 540" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <g font-family="JetBrains Mono">
+        <text x="50" y="36" class="lbl-dim" style="font-size:10px;">bit:</text>
+        <g style="font-size:9px;">
+          <text x="80" y="36" class="lbl-dim">15</text>
+          <text x="125" y="36" class="lbl-dim">14</text>
+          <text x="170" y="36" class="lbl-dim">13</text>
+          <text x="215" y="36" class="lbl-dim">12</text>
+          <text x="265" y="36" class="lbl-dim">11</text>
+          <text x="320" y="36" class="lbl-dim">  …</text>
+          <text x="900" y="36" class="lbl-dim">0</text>
+        </g>
+      </g>
+
+      <!-- group label: playback -->
+      <text x="50" y="56" class="lbl-accent" style="font-size:10px; letter-spacing:0.1em;">— 回放类指令 —</text>
+
+      <text x="50" y="84" class="lbl-accent">WAIT</text>
+      <rect x="80" y="64" width="180" height="32" fill="#a8410d" opacity="0.85"/>
+      <text x="170" y="84" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0000 (op)</text>
+      <rect x="260" y="64" width="680" height="32" fill="#fbf9f4" stroke="#a8410d" stroke-width="1"/>
+      <text x="600" y="84" class="lbl" text-anchor="middle">imm12 — 12-bit 等待计数（0-4095）</text>
+
+      <text x="50" y="130" class="lbl-accent">WRITE</text>
+      <rect x="80" y="110" width="180" height="32" fill="#a8410d" opacity="0.85"/>
+      <text x="170" y="130" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0001 (op)</text>
+      <rect x="260" y="110" width="180" height="32" fill="#fbf9f4" stroke="#2c6770" stroke-width="1"/>
+      <text x="350" y="130" class="lbl" text-anchor="middle" style="fill:#2c6770;">reg_id (4)</text>
+      <rect x="440" y="110" width="500" height="32" fill="#fbf9f4" stroke="#5e3677" stroke-width="1"/>
+      <text x="690" y="130" class="lbl" text-anchor="middle" style="fill:#5e3677;">value (8-bit 立即数)</text>
+
+      <text x="50" y="176" class="lbl-accent">LWAIT</text>
+      <rect x="80" y="156" width="180" height="32" fill="#a8410d" opacity="0.85"/>
+      <text x="170" y="176" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0010 (op)</text>
+      <rect x="260" y="156" width="200" height="32" fill="#fbf9f4" stroke="#9a8a78" stroke-width="1"/>
+      <text x="360" y="176" class="lbl-dim" text-anchor="middle">unused</text>
+      <rect x="460" y="156" width="480" height="32" fill="#fbf9f4" stroke="#a8410d" stroke-width="1"/>
+      <text x="700" y="176" class="lbl" text-anchor="middle">imm_long (拼接下条指令)</text>
+
+      <text x="50" y="222" class="lbl-accent">WKEY</text>
+      <rect x="80" y="202" width="180" height="32" fill="#a8410d" opacity="0.85"/>
+      <text x="170" y="222" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0011 (op)</text>
+      <rect x="260" y="202" width="120" height="32" fill="#fbf9f4" stroke="#2c6770" stroke-width="1"/>
+      <text x="320" y="222" class="lbl" text-anchor="middle" style="fill:#2c6770; font-size:10px;">reg(4)</text>
+      <rect x="380" y="202" width="280" height="32" fill="#fbf9f4" stroke="#5e3677" stroke-width="1"/>
+      <text x="520" y="222" class="lbl" text-anchor="middle" style="fill:#5e3677; font-size:10px;">value (8)</text>
+      <rect x="660" y="202" width="280" height="32" fill="#fbf9f4" stroke="#4d6b2a" stroke-width="1"/>
+      <text x="800" y="222" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-size:10px;">MIDI key (8)</text>
+
+      <!-- group label: arithmetic -->
+      <text x="50" y="264" class="lbl-accent" style="font-size:10px; letter-spacing:0.1em; fill:#2c6770;">— 运算类指令（ALU 参与）—</text>
+
+      <text x="50" y="292" class="lbl-accent" style="fill:#2c6770;">LOADI</text>
+      <rect x="80" y="272" width="180" height="32" fill="#2c6770" opacity="0.85"/>
+      <text x="170" y="292" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0100 (op)</text>
+      <rect x="260" y="272" width="180" height="32" fill="#fbf9f4" stroke="#2c6770" stroke-width="1"/>
+      <text x="350" y="292" class="lbl" text-anchor="middle" style="fill:#2c6770;">Rd (2) +保留</text>
+      <rect x="440" y="272" width="500" height="32" fill="#fbf9f4" stroke="#5e3677" stroke-width="1"/>
+      <text x="690" y="292" class="lbl" text-anchor="middle" style="fill:#5e3677;">立即数 (8-bit) → R[Rd]</text>
+
+      <text x="50" y="338" class="lbl-accent" style="fill:#2c6770;">ADD</text>
+      <rect x="80" y="318" width="180" height="32" fill="#2c6770" opacity="0.85"/>
+      <text x="170" y="338" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0101 (op)</text>
+      <rect x="260" y="318" width="220" height="32" fill="#fbf9f4" stroke="#2c6770" stroke-width="1"/>
+      <text x="370" y="338" class="lbl" text-anchor="middle" style="fill:#2c6770; font-size:10px;">Rd (2)</text>
+      <rect x="480" y="318" width="220" height="32" fill="#fbf9f4" stroke="#5e3677" stroke-width="1"/>
+      <text x="590" y="338" class="lbl" text-anchor="middle" style="fill:#5e3677; font-size:10px;">Ra (2)</text>
+      <rect x="700" y="318" width="240" height="32" fill="#fbf9f4" stroke="#4d6b2a" stroke-width="1"/>
+      <text x="820" y="338" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-size:10px;">Rb (2) → R[Rd]=R[Ra]+R[Rb]</text>
+
+      <text x="50" y="384" class="lbl-accent" style="fill:#2c6770;">SUB</text>
+      <rect x="80" y="364" width="180" height="32" fill="#2c6770" opacity="0.85"/>
+      <text x="170" y="384" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0110 (op)</text>
+      <rect x="260" y="364" width="220" height="32" fill="#fbf9f4" stroke="#2c6770" stroke-width="1"/>
+      <text x="370" y="384" class="lbl" text-anchor="middle" style="fill:#2c6770; font-size:10px;">Rd (2)</text>
+      <rect x="480" y="364" width="220" height="32" fill="#fbf9f4" stroke="#5e3677" stroke-width="1"/>
+      <text x="590" y="384" class="lbl" text-anchor="middle" style="fill:#5e3677; font-size:10px;">Ra (2)</text>
+      <rect x="700" y="364" width="240" height="32" fill="#fbf9f4" stroke="#4d6b2a" stroke-width="1"/>
+      <text x="820" y="384" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-size:10px;">Rb (2) → R[Rd]=R[Ra]−R[Rb]</text>
+
+      <text x="50" y="430" class="lbl-accent" style="fill:#2c6770;">WRITEREG</text>
+      <rect x="80" y="410" width="180" height="32" fill="#2c6770" opacity="0.85"/>
+      <text x="170" y="430" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">0111 (op)</text>
+      <rect x="260" y="410" width="280" height="32" fill="#fbf9f4" stroke="#a8410d" stroke-width="1"/>
+      <text x="400" y="430" class="lbl" text-anchor="middle" style="fill:#a8410d; font-size:10px;">reg_id (4) APU 地址</text>
+      <rect x="540" y="410" width="400" height="32" fill="#fbf9f4" stroke="#2c6770" stroke-width="1"/>
+      <text x="740" y="430" class="lbl" text-anchor="middle" style="fill:#2c6770; font-size:10px;">Rs (2) → MMIO[reg_id]=R[Rs]</text>
+
+      <!-- END -->
+      <text x="50" y="476" class="lbl-accent" style="fill:#8b2820;">END</text>
+      <rect x="80" y="456" width="180" height="32" fill="#8b2820" opacity="0.85"/>
+      <text x="170" y="476" class="lbl" text-anchor="middle" style="fill:white; font-weight:600;">1111 (op)</text>
+      <rect x="260" y="456" width="680" height="32" fill="#fbf9f4" stroke="#9a8a78" stroke-width="1"/>
+      <text x="600" y="476" class="lbl-dim" text-anchor="middle">unused — 触发"曲目结束"信号</text>
+
+      <text x="500" y="516" class="lbl-dim" text-anchor="middle" style="font-size:10px;">通用寄存器 R0-R3 各 8-bit，编号用 2-bit。LOADI/ADD/SUB/WRITEREG 让 ALU 真正参与计算。</text>
+    </svg>
+    <div class="diagram-caption">FIG 6.1 · 9 条指令：5 条回放 + 4 条运算（让 CPU 具备基本加减能力）</div>
+  </div>
+
+  <h3><span class="num">▸</span>五段数据通路（详细）</h3>
+
+  <div class="diagram">
+    <div class="diagram-label">FIG. 6.2 · CPU DATAPATH</div>
+    <svg viewBox="0 0 1100 460" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="ar-cpu" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#a8410d"/>
+        </marker>
+      </defs>
+
+      <rect x="20" y="40" width="200" height="400" fill="#fbf9f4" opacity="0.5"/>
+      <rect x="240" y="40" width="180" height="400" fill="#fbf9f4" opacity="0.5"/>
+      <rect x="440" y="40" width="180" height="400" fill="#fbf9f4" opacity="0.5"/>
+      <rect x="640" y="40" width="200" height="400" fill="#fbf9f4" opacity="0.5"/>
+      <rect x="860" y="40" width="220" height="400" fill="#fbf9f4" opacity="0.5"/>
+
+      <text x="120" y="62" class="title" text-anchor="middle">IF · 取指</text>
+      <text x="330" y="62" class="title" text-anchor="middle">ID · 译码</text>
+      <text x="530" y="62" class="title" text-anchor="middle">EX · 执行</text>
+      <text x="740" y="62" class="title" text-anchor="middle">MEM · 访存</text>
+      <text x="970" y="62" class="title" text-anchor="middle">WB · 回写</text>
+
+      <rect x="50" y="100" width="100" height="50" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="100" y="120" class="lbl" text-anchor="middle" style="font-weight:600;">PC</text>
+      <text x="100" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">16-bit</text>
+
+      <line x1="100" y1="150" x2="100" y2="180" stroke="#a8410d" stroke-width="1.2" marker-end="url(#ar-cpu)"/>
+
+      <rect x="50" y="185" width="140" height="55" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="120" y="205" class="lbl" text-anchor="middle" style="font-weight:600;">指令 ROM</text>
+      <text x="120" y="222" class="lbl-dim" text-anchor="middle" style="font-size:9px;">addr → instr</text>
+
+      <rect x="50" y="280" width="140" height="40" fill="#fff" stroke="#4d6b2a" stroke-width="1.2"/>
+      <text x="120" y="304" class="lbl" text-anchor="middle" style="fill:#4d6b2a;">PC + 1</text>
+
+      <line x1="50" y1="300" x2="35" y2="300" stroke="#4d6b2a" stroke-width="1.2"/>
+      <line x1="35" y1="300" x2="35" y2="125" stroke="#4d6b2a" stroke-width="1.2"/>
+      <line x1="35" y1="125" x2="50" y2="125" stroke="#4d6b2a" stroke-width="1.2" marker-end="url(#ar-cpu)" style="marker-end:url(#ar-cpu); stroke:#4d6b2a;"/>
+
+      <line x1="190" y1="212" x2="240" y2="212" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-cpu)"/>
+      <text x="215" y="205" class="lbl-dim" text-anchor="middle" style="font-size:9px;">instr</text>
+
+      <rect x="260" y="100" width="140" height="55" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="330" y="120" class="lbl" text-anchor="middle" style="font-weight:600;">opcode 提取</text>
+      <text x="330" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">高 4 位 → ctrl</text>
+
+      <rect x="260" y="170" width="140" height="55" fill="#fff" stroke="#2c6770" stroke-width="1.2"/>
+      <text x="330" y="190" class="lbl" text-anchor="middle" style="fill:#2c6770;">操作数拆分</text>
+      <text x="330" y="207" class="lbl-dim" text-anchor="middle" style="font-size:9px;">reg / val / imm</text>
+
+      <rect x="260" y="240" width="140" height="55" fill="#fff" stroke="#5e3677" stroke-width="1.2"/>
+      <text x="330" y="260" class="lbl" text-anchor="middle" style="fill:#5e3677;">控制信号生成</text>
+      <text x="330" y="277" class="lbl-dim" text-anchor="middle" style="font-size:9px;">is_wait / is_write</text>
+
+      <line x1="400" y1="200" x2="440" y2="200" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-cpu)"/>
+
+      <rect x="460" y="100" width="140" height="60" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="530" y="120" class="lbl" text-anchor="middle" style="font-weight:600;">等待计数器</text>
+      <text x="530" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">12-bit 减法器</text>
+      <text x="530" y="152" class="lbl-dim" text-anchor="middle" style="font-size:9px;">每周期 -1</text>
+
+      <rect x="460" y="180" width="140" height="60" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
+      <text x="530" y="200" class="lbl" text-anchor="middle" style="fill:#2c6770; font-weight:600;">ALU</text>
+      <text x="530" y="217" class="lbl-dim" text-anchor="middle" style="font-size:9px;">ADD / SUB (8-bit)</text>
+      <text x="530" y="231" class="lbl-dim" text-anchor="middle" style="font-size:9px;">+ 地址生成</text>
+
+      <rect x="460" y="260" width="140" height="60" fill="#fff" stroke="#8b2820" stroke-width="1.2"/>
+      <text x="530" y="280" class="lbl" text-anchor="middle" style="fill:#8b2820;">stall 信号</text>
+      <text x="530" y="297" class="lbl-dim" text-anchor="middle" style="font-size:9px;">wait_cnt > 0?</text>
+
+      <line x1="600" y1="210" x2="640" y2="210" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-cpu)"/>
+
+      <rect x="660" y="100" width="160" height="70" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="740" y="120" class="lbl" text-anchor="middle" style="font-weight:600;">MMIO 地址译码</text>
+      <text x="740" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">$4000-$400F</text>
+      <text x="740" y="155" class="lbl-dim" text-anchor="middle" style="font-size:9px;">→ APU 寄存器 we</text>
+
+      <rect x="660" y="190" width="160" height="60" fill="#fff" stroke="#8b2820" stroke-width="1.5"/>
+      <text x="740" y="210" class="lbl" text-anchor="middle" style="fill:#8b2820; font-weight:600;">→ APU 寄存器组</text>
+      <text x="740" y="227" class="lbl-dim" text-anchor="middle" style="font-size:9px;">这里"出声"</text>
+
+      <rect x="660" y="270" width="160" height="50" fill="#fff" stroke="#5e3677" stroke-width="1.2"/>
+      <text x="740" y="290" class="lbl" text-anchor="middle" style="fill:#5e3677;">END → 切歌信号</text>
+      <text x="740" y="307" class="lbl-dim" text-anchor="middle" style="font-size:9px;">触发外部控制</text>
+
+      <line x1="820" y1="220" x2="860" y2="220" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-cpu)"/>
+
+      <rect x="880" y="100" width="180" height="60" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="970" y="120" class="lbl" text-anchor="middle" style="font-weight:600;">PC 更新逻辑</text>
+      <text x="970" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">stall? 保持 : PC+1</text>
+
+      <rect x="880" y="180" width="180" height="60" fill="#fff" stroke="#8b2820" stroke-width="1.2"/>
+      <text x="970" y="200" class="lbl" text-anchor="middle" style="fill:#8b2820;">复位逻辑</text>
+      <text x="970" y="218" class="lbl-dim" text-anchor="middle" style="font-size:9px;">END/切歌 → PC=0</text>
+
+      <rect x="880" y="270" width="180" height="60" fill="#fff" stroke="#2c6770" stroke-width="1.2"/>
+      <text x="970" y="290" class="lbl" text-anchor="middle" style="fill:#2c6770;">等待寄存器写回</text>
+      <text x="970" y="307" class="lbl-dim" text-anchor="middle" style="font-size:9px;">下次仍 stall</text>
+
+      <line x1="970" y1="160" x2="970" y2="370" stroke="#4d6b2a" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <line x1="970" y1="370" x2="100" y2="370" stroke="#4d6b2a" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <line x1="100" y1="370" x2="100" y2="150" stroke="#4d6b2a" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#ar-cpu)" style="marker-end:url(#ar-cpu); stroke:#4d6b2a;"/>
+      <text x="500" y="385" class="lbl-dim" text-anchor="middle" style="font-size:10px; fill:#4d6b2a;">↑ 新 PC 反馈到取指阶段（下一个时钟周期）</text>
+
+      <rect x="20" y="420" width="1060" height="20" fill="#fbf9f4" stroke="#5e3677" stroke-width="1"/>
+      <text x="550" y="434" class="lbl" text-anchor="middle" style="fill:#5e3677; font-size:10px;">CLK · 系统时钟（受暂停信号门控）</text>
+    </svg>
+    <div class="diagram-caption">FIG 6.2 · 五段数据通路，关键反馈：stall 让 PC 在等待期间不递增</div>
+  </div>
+
+  <h3><span class="num">▸</span>关键设计点</h3>
+
+  <div class="card info">
+    <div class="card-title">ALU + 通用寄存器：让 CPU 真能算</div>
+    <p>
+      为了让 CPU 具备<strong>基本的加减运算能力</strong>（而不只是搬数据），我们加了：<br>
+      <strong>① 4 个通用寄存器 R0–R3</strong>（各 8-bit，用 Logisim Register 组件）；<br>
+      <strong>② 一个真正的 ALU</strong>，支持 <code>ADD</code> / <code>SUB</code> 两种算术运算，外加内部用的 <code>DEC</code>（递减）和零检测。<br>
+      指令 <code>LOADI</code> / <code>ADD</code> / <code>SUB</code> / <code>WRITEREG</code> 配合这套硬件，能实现颤音、音量渐变等真实音乐效果——
+      EX 段的 ALU 在这些指令下<em>真的在做加减</em>，不是摆设。
+    </p>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">FIG. 6.3 · ALU 子电路</div>
+    <svg viewBox="0 0 1000 240" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="ar-alu" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#2c6770"/>
+        </marker>
+      </defs>
+
+      <!-- inputs -->
+      <rect x="40" y="50" width="120" height="40" fill="#fff" stroke="#5e3677" stroke-width="1.2"/>
+      <text x="100" y="74" class="lbl" text-anchor="middle" style="fill:#5e3677;">A (8-bit)</text>
+      <rect x="40" y="110" width="120" height="40" fill="#fff" stroke="#5e3677" stroke-width="1.2"/>
+      <text x="100" y="134" class="lbl" text-anchor="middle" style="fill:#5e3677;">B (8-bit)</text>
+      <rect x="40" y="170" width="120" height="40" fill="#fff" stroke="#a8410d" stroke-width="1.2"/>
+      <text x="100" y="194" class="lbl" text-anchor="middle" style="fill:#a8410d;">op (2-bit)</text>
+
+      <!-- adder / subtractor -->
+      <line x1="160" y1="70" x2="240" y2="80" stroke="#2c6770" stroke-width="1.2" marker-end="url(#ar-alu)"/>
+      <line x1="160" y1="130" x2="240" y2="100" stroke="#2c6770" stroke-width="1.2" marker-end="url(#ar-alu)"/>
+      <rect x="240" y="60" width="160" height="50" fill="#fff" stroke="#2c6770" stroke-width="1.2"/>
+      <text x="320" y="80" class="lbl" text-anchor="middle">Adder</text>
+      <text x="320" y="98" class="lbl-dim" text-anchor="middle" style="font-size:9px;">A + B</text>
+
+      <line x1="160" y1="80" x2="240" y2="150" stroke="#2c6770" stroke-width="1.2" marker-end="url(#ar-alu)"/>
+      <line x1="160" y1="135" x2="240" y2="170" stroke="#2c6770" stroke-width="1.2" marker-end="url(#ar-alu)"/>
+      <rect x="240" y="135" width="160" height="50" fill="#fff" stroke="#2c6770" stroke-width="1.2"/>
+      <text x="320" y="155" class="lbl" text-anchor="middle">Subtractor</text>
+      <text x="320" y="173" class="lbl-dim" text-anchor="middle" style="font-size:9px;">A − B</text>
+
+      <!-- MUX -->
+      <line x1="400" y1="85" x2="470" y2="105" stroke="#2c6770" stroke-width="1.2" marker-end="url(#ar-alu)"/>
+      <line x1="400" y1="160" x2="470" y2="135" stroke="#2c6770" stroke-width="1.2" marker-end="url(#ar-alu)"/>
+      <line x1="160" y1="190" x2="470" y2="150" stroke="#a8410d" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#ar-alu)" style="marker-end:url(#ar-alu); stroke:#a8410d;"/>
+      <rect x="470" y="90" width="120" height="70" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="530" y="118" class="lbl" text-anchor="middle" style="font-weight:600;">MUX</text>
+      <text x="530" y="136" class="lbl-dim" text-anchor="middle" style="font-size:9px;">op 选结果</text>
+
+      <line x1="590" y1="125" x2="670" y2="125" stroke="#2c6770" stroke-width="1.5" marker-end="url(#ar-alu)"/>
+
+      <rect x="670" y="100" width="160" height="50" fill="#fff" stroke="#4d6b2a" stroke-width="1.5"/>
+      <text x="750" y="120" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-weight:600;">result (8-bit)</text>
+      <text x="750" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">→ 写回 R[Rd]</text>
+
+      <text x="500" y="220" class="lbl-dim" text-anchor="middle" style="font-size:10px;">op=00: ADD ｜ op=01: SUB ｜（内部另有 12-bit 减法器给 WaitCounter 递减，独立于此）</text>
+    </svg>
+    <div class="diagram-caption">FIG 6.3 · ALU：一个加法器 + 一个减法器 + 一个结果选择 MUX。极简但功能完整。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">WAIT 指令如何"占用多个周期"</div>
+    <p>
+      <strong>问题</strong>：WAIT 指令需要让 CPU 停在原地等 N 个周期，怎么实现？<br>
+      <strong>方案</strong>：EX 阶段维护一个 12-bit"等待计数器"寄存器。
+      WAIT 指令到 EX 时把计数器装载为 N，之后每个时钟 -1，直到归零才发出 <code>stall=0</code>。
+      WB 阶段看到 <code>stall=1</code> 就<em>不更新 PC</em>，IF 阶段于是反复取同一条 WAIT 指令——
+      但因为计数器在递减，实际上是在"原地走时间"。
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">MMIO 地址译码（CPU↔APU 接口）</div>
+    <p>
+      约定 APU 寄存器映射到地址 <code>$4000–$400F</code>（共 16 个 8-bit 寄存器，模仿真实 NES 布局）。<br>
+      MEM 阶段拿到 reg_id 后，根据 opcode 判断是不是写 APU 类指令（WRITE / WKEY / WRITEREG）：<br>
+      <code>apu_we[reg_id] = is_apu_write &amp;&amp; stage==MEM</code><br>
+      区别在于：WRITE/WKEY 写的是<em>立即数</em>，WRITEREG 写的是<em>通用寄存器 R[Rs] 的值</em>（经 ALU 算出来的）。
+      数据来源用一个 MUX 切换。APU 寄存器组就是 16 组 8-bit D 触发器，每组有自己的写使能。
+    </p>
+  </div>
+
+  <div class="card good">
+    <div class="card-title">为什么单周期而不是流水线？</div>
+    <p>
+      真流水化需要处理"数据冒险"和"控制冒险"，工作量翻倍。
+      作业只要求"有五个阶段"——单周期五段满足要求。<strong>组件数估计：CPU 整体约 70-90 个元件</strong>（含 ALU 和通用寄存器堆）。
+    </p>
+  </div>
+
+  <div class="card info">
+    <div class="card-title">验收演示建议：ALU 可视化</div>
+    <p>
+      在主电路上放 4 个 Hex Digit Display 显示 R0–R3 的实时值。
+      验收时如果老师问"ALU 能不能算"，可以<strong>当场改 ROM</strong> 写一段
+      <code>LOADI R0,100 / LOADI R1,200 / ADD R2,R0,R1</code>，
+      让 R2 显示出 300（注意 8-bit 溢出，实际显示 44，可改成不溢出的数）——现场演示运算最有说服力。
+    </p>
+  </div>
+</section>
+
+<!-- ============ S7 APU REWRITTEN ============ -->
+<section id="s7">
+  <div class="sec-label">
+    <span class="sec-num">07</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">APU · 详细设计</span>
+  </div>
+  <h2>APU 详细设计</h2>
+  <p class="lead">
+    APU 的工作是：<em>解析 CPU 写入的寄存器值 → 算出频率/音量/使能 → 喂给对应的 Buzzer</em>。
+    没有波形生成器，没有混音器——Buzzer 已经搞定了。
+  </p>
+
+  <h3><span class="num">▸</span>寄存器地址映射（对齐真实 NES）</h3>
+  <table>
+    <thead>
+      <tr><th>地址</th><th>归属</th><th>bit 7..0</th><th>用途</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>$4000</code></td><td>Pulse 1</td><td>DDLC NNNN</td><td>占空比(2)/长度禁(1)/包络禁(1)/音量(4)</td></tr>
+      <tr><td><code>$4001</code></td><td>Pulse 1</td><td>EPPP NSSS</td><td>扫频（我们忽略，写入但不用）</td></tr>
+      <tr><td><code>$4002</code></td><td>Pulse 1</td><td>TTTT TTTT</td><td>频率低 8 位</td></tr>
+      <tr><td><code>$4003</code></td><td>Pulse 1</td><td>LLLL LTTT</td><td>长度计数 + 频率高 3 位</td></tr>
+      <tr><td><code>$4004-7</code></td><td>Pulse 2</td><td colspan="2">同 Pulse 1</td></tr>
+      <tr><td><code>$4008</code></td><td>Triangle</td><td>CRRR RRRR</td><td>线性计数控制</td></tr>
+      <tr><td><code>$400A</code></td><td>Triangle</td><td>TTTT TTTT</td><td>频率低 8 位</td></tr>
+      <tr><td><code>$400B</code></td><td>Triangle</td><td>LLLL LTTT</td><td>长度计数 + 频率高 3 位</td></tr>
+      <tr><td><code>$400C</code></td><td>Noise</td><td>--LC NNNN</td><td>长度禁 + 音量</td></tr>
+      <tr><td><code>$400E</code></td><td>Noise</td><td>M--- PPPP</td><td>模式 + 周期索引</td></tr>
+      <tr><td><code>$400F</code></td><td>Noise</td><td>LLLL L---</td><td>长度计数</td></tr>
+      <tr><td><code>$4015</code></td><td>状态</td><td>---D NT21</td><td>通道使能（noise/triangle/pulse2/pulse1）</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="num">▸</span>每个通道做什么（统一架构）</h3>
+
+  <div class="card good">
+    <div class="card-title">所有 4 个通道结构一致</div>
+    <p>
+      每个通道都是这三件事：<strong>① 从寄存器读出 timer 值 → ② 用公式换算成 Hz → ③ 接到 Buzzer 的 Frequency 引脚</strong>。
+      加上音量、使能、占空比的接线。<em>不写任何波形生成逻辑。</em>
+    </p>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">FIG. 7.1 · CHANNEL DATAPATH (UNIFIED)</div>
+    <svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="ar-ch" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#a8410d"/>
+        </marker>
+      </defs>
+
+      <!-- Registers -->
+      <rect x="40" y="40" width="200" height="200" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
+      <text x="140" y="62" class="title" text-anchor="middle">通道寄存器</text>
+      <text x="140" y="80" class="lbl-dim" text-anchor="middle" style="font-size:10px;">CPU 写入</text>
+      <line x1="60" y1="92" x2="220" y2="92" stroke="#9a8a78" stroke-width="0.5" stroke-dasharray="2 2"/>
+      <text x="60" y="115" class="lbl" style="font-size:11px;">timer (11-bit)</text>
+      <text x="60" y="135" class="lbl-dim" style="font-size:9px;">频率低+高位拼接</text>
+      <text x="60" y="158" class="lbl" style="font-size:11px;">vol (4-bit)</text>
+      <text x="60" y="178" class="lbl-dim" style="font-size:9px;">$4000 / $400C bit3-0</text>
+      <text x="60" y="201" class="lbl" style="font-size:11px;">duty (2-bit)</text>
+      <text x="60" y="221" class="lbl-dim" style="font-size:9px;">$4000 bit7-6 (Pulse 用)</text>
+
+      <!-- Frequency converter -->
+      <line x1="240" y1="115" x2="290" y2="115" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-ch)"/>
+      <rect x="290" y="80" width="200" height="100" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
+      <text x="390" y="105" class="title" text-anchor="middle" style="fill:#2c6770;">频率换算</text>
+      <text x="390" y="125" class="mono-sm" text-anchor="middle">f_Hz = K / (timer+1)</text>
+      <text x="390" y="142" class="lbl-dim" text-anchor="middle" style="font-size:10px;">K = 缩放常数</text>
+      <text x="390" y="160" class="lbl-dim" text-anchor="middle" style="font-size:10px;">实现：除法器 或 查找 ROM</text>
+      <text x="390" y="174" class="lbl-dim" text-anchor="middle" style="font-size:9px;">2048 项 ROM 最简单</text>
+
+      <!-- Channel enable -->
+      <rect x="290" y="200" width="200" height="40" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
+      <text x="390" y="222" class="lbl" text-anchor="middle" style="fill:#5e3677;">通道使能 ($4015)</text>
+      <text x="390" y="236" class="lbl-dim" text-anchor="middle" style="font-size:9px;">AND vol → 静音</text>
+
+      <!-- to Buzzer -->
+      <line x1="490" y1="130" x2="560" y2="100" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-ch)"/>
+      <text x="525" y="110" class="lbl-dim" style="font-size:9px;">→ Freq</text>
+      <line x1="490" y1="220" x2="560" y2="150" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar-ch)"/>
+      <text x="525" y="195" class="lbl-dim" style="font-size:9px;">→ Vol / En</text>
+      <line x1="240" y1="200" x2="560" y2="200" stroke="#a8410d" stroke-width="1" stroke-dasharray="3 3"/>
+      <line x1="560" y1="200" x2="560" y2="170" stroke="#a8410d" stroke-width="1" marker-end="url(#ar-ch)"/>
+      <text x="400" y="195" class="lbl-dim" style="font-size:9px;">→ Duty (Pulse 用)</text>
+
+      <!-- Buzzer -->
+      <rect x="560" y="60" width="200" height="180" fill="#fff" stroke="#4d6b2a" stroke-width="2"/>
+      <text x="660" y="85" class="title" text-anchor="middle" style="fill:#4d6b2a;">Buzzer 组件</text>
+      <text x="660" y="105" class="lbl-dim" text-anchor="middle" style="font-size:10px;">waveform 属性已设定</text>
+      <line x1="580" y1="115" x2="740" y2="115" stroke="#9a8a78" stroke-width="0.5" stroke-dasharray="2 2"/>
+      <text x="580" y="135" class="lbl" style="font-size:11px;">▸ Pulse:    square</text>
+      <text x="580" y="155" class="lbl" style="font-size:11px;">▸ Triangle: triangle</text>
+      <text x="580" y="175" class="lbl" style="font-size:11px;">▸ Noise:    noise</text>
+      <text x="660" y="200" class="lbl-dim" text-anchor="middle" style="font-size:10px;">直接生成对应波形</text>
+      <text x="660" y="220" class="lbl-dim" text-anchor="middle" style="font-size:10px;">不用我们搓</text>
+
+      <!-- output -->
+      <line x1="760" y1="150" x2="820" y2="150" stroke="#4d6b2a" stroke-width="2" marker-end="url(#ar-ch)" style="marker-end:url(#ar-ch); stroke:#4d6b2a;"/>
+      <text x="880" y="148" class="lbl" text-anchor="middle" style="font-size:20px;">🔊</text>
+      <text x="880" y="170" class="lbl-dim" text-anchor="middle" style="font-size:10px;">声音</text>
+    </svg>
+    <div class="diagram-caption">FIG 7.1 · 通道统一架构：寄存器 → 频率换算 → Buzzer。波形生成完全交给 Buzzer 组件</div>
+  </div>
+
+  <h3><span class="num">▸</span>每个通道的特殊处理</h3>
+
+  <div class="card">
+    <div class="card-title">Pulse 1 / Pulse 2 — 用 Buzzer 的 Duty Cycle</div>
+    <p>
+      NES 的 4 种占空比（12.5%/25%/50%/75%）映射到 Buzzer 的 8-bit Duty Cycle 输入：<br>
+      <code>$4000 bit7-6 → MUX 选择 → {32, 64, 128, 192}</code><br>
+      （Buzzer Duty 是 0-255 满量程，所以 NES 50% = Buzzer 128）<br>
+      Pulse 通道 = 频率换算 + 占空比查表 + 音量。<em>这是工作量最大的通道</em>。
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Triangle — 最简单的通道</div>
+    <p>
+      Buzzer 的 triangle 波形不接受 Duty Cycle 输入。<br>
+      所以 Triangle 通道只需要：<strong>11-bit timer → 频率换算 → Buzzer.Frequency</strong>。<br>
+      音量？真实 2A03 的 Triangle 通道<em>没有音量寄存器</em>——它只有"响"或"不响"两态。
+      我们也照做：Buzzer.Volume 接一个固定值（比如最大值），用 $4015 使能位控制响不响。<br>
+      <em>整个 Triangle 通道大约 10 个组件就够了。</em>
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Noise — 周期索引查表</div>
+    <p>
+      Noise 通道的频率不是 11-bit timer，而是 <code>$400E bit3-0</code> 这 4 位作为<em>周期表索引</em>。
+      用一个 16 项的 ROM 查找表把索引映射到频率：
+    </p>
+    <pre class="code-block" style="margin: 8px 0; font-size: 11px;"><span class="cmt"># NES Noise 周期表（NTSC，单位 CPU 周期）</span>
+4, 8, 16, 32, 64, 96, 128, 160,
+202, 254, 380, 508, 762, 1016, 2034, 4068
+<span class="cmt"># 缩放后写入查找 ROM，输出接 Buzzer.Frequency</span></pre>
+    <p>
+      Buzzer 的 noise 波形是 Java <code>Random</code>，不是真 NES 的 LFSR——
+      但听感上都是噪声，对作业来说够用了。
+    </p>
+  </div>
+
+  <div class="card good">
+    <div class="card-title">$4015 通道使能</div>
+    <p>
+      <code>$4015</code> 寄存器的低 4 位分别控制 4 个通道的使能。
+      每个通道把这一位 AND 到自己的 Buzzer.Select 引脚上。<br>
+      切歌/停止时把 <code>$4015</code> 写成 0 就能<em>瞬间静音所有通道</em>。
+    </p>
+  </div>
+
+  <div class="card info">
+    <div class="card-title">混音器？不需要！</div>
+    <p>
+      4 个 Buzzer 都连到 Logisim 仿真器的音频输出，系统声卡<strong>自动叠加</strong>它们的声音。
+      这就是天然的线性混音——不需要我们自己搭加法器。<br>
+      <em>这是把工作量交给 Buzzer 组件最大的好处。</em>
+    </p>
+  </div>
+</section>
+
+<!-- ============ S8 ============ -->
+<section id="s8">
+  <div class="sec-label">
+    <span class="sec-num">08</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">UX · 控制 & 计时</span>
+  </div>
+  <h2>控制面板 & 计时器</h2>
+  <p>这部分是纯逻辑，不经过 CPU。用按钮 + 几个触发器搞定。</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1000 280" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+      <defs>
+        <marker id="ar6" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <polygon points="0 0, 10 3, 0 6" fill="#5e3677"/>
+        </marker>
+      </defs>
+
+      <text x="100" y="30" class="lbl-accent" text-anchor="middle">按钮输入</text>
+      <rect x="40" y="50" width="120" height="35" fill="#fff" stroke="#5e3677" stroke-width="1"/>
+      <text x="100" y="73" class="lbl" text-anchor="middle">▶ 播放</text>
+      <rect x="40" y="95" width="120" height="35" fill="#fff" stroke="#5e3677" stroke-width="1"/>
+      <text x="100" y="118" class="lbl" text-anchor="middle">⏸ 暂停</text>
+      <rect x="40" y="140" width="120" height="35" fill="#fff" stroke="#5e3677" stroke-width="1"/>
+      <text x="100" y="163" class="lbl" text-anchor="middle">⏹ 停止</text>
+      <rect x="40" y="185" width="120" height="35" fill="#fff" stroke="#5e3677" stroke-width="1"/>
+      <text x="100" y="208" class="lbl" text-anchor="middle">⏮ 上一首</text>
+      <rect x="40" y="230" width="120" height="35" fill="#fff" stroke="#5e3677" stroke-width="1"/>
+      <text x="100" y="253" class="lbl" text-anchor="middle">⏭ 下一首</text>
+
+      <line x1="160" y1="67" x2="280" y2="120" stroke="#5e3677" stroke-width="0.8" marker-end="url(#ar6)"/>
+      <line x1="160" y1="113" x2="280" y2="120" stroke="#5e3677" stroke-width="0.8" marker-end="url(#ar6)"/>
+      <line x1="160" y1="158" x2="280" y2="200" stroke="#5e3677" stroke-width="0.8" marker-end="url(#ar6)"/>
+      <line x1="160" y1="203" x2="430" y2="170" stroke="#5e3677" stroke-width="0.8" marker-end="url(#ar6)"/>
+      <line x1="160" y1="248" x2="430" y2="180" stroke="#5e3677" stroke-width="0.8" marker-end="url(#ar6)"/>
+
+      <rect x="280" y="80" width="160" height="80" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
+      <text x="360" y="105" class="lbl" text-anchor="middle" style="font-weight:600;">暂停标志 D-FF</text>
+      <text x="360" y="123" class="lbl-dim" text-anchor="middle" style="font-size:10px;">控制 CPU 时钟使能</text>
+      <text x="360" y="140" class="lbl-dim" text-anchor="middle" style="font-size:10px;">暂停 = 冻结状态</text>
+
+      <rect x="280" y="180" width="160" height="80" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
+      <text x="360" y="205" class="lbl" text-anchor="middle" style="font-weight:600;">CPU 复位脉冲</text>
+      <text x="360" y="223" class="lbl-dim" text-anchor="middle" style="font-size:10px;">停止时清零 PC</text>
+      <text x="360" y="240" class="lbl-dim" text-anchor="middle" style="font-size:10px;">写 $4015 = 0 静音</text>
+
+      <rect x="430" y="130" width="160" height="80" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
+      <text x="510" y="155" class="lbl" text-anchor="middle" style="font-weight:600;">曲目计数器</text>
+      <text x="510" y="173" class="lbl-dim" text-anchor="middle" style="font-size:10px;">4-bit 上下计数</text>
+      <text x="510" y="190" class="lbl-dim" text-anchor="middle" style="font-size:10px;">选 ROM (MUX)</text>
+
+      <rect x="620" y="40" width="170" height="100" fill="#fff" stroke="#4d6b2a" stroke-width="1.5"/>
+      <text x="705" y="65" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-weight:600;">计时器</text>
+      <text x="705" y="83" class="lbl-dim" text-anchor="middle" style="font-size:10px;">1 Hz 慢时钟</text>
+      <text x="705" y="98" class="lbl-dim" text-anchor="middle" style="font-size:10px;">秒 (0-59) → 分</text>
+      <text x="705" y="115" class="lbl-dim" text-anchor="middle" style="font-size:10px;">切歌/停止时复位</text>
+      <text x="705" y="130" class="lbl" text-anchor="middle" style="fill:#4d6b2a;">MM:SS</text>
+
+      <rect x="620" y="160" width="170" height="80" fill="#fff" stroke="#8b2820" stroke-width="1.5"/>
+      <text x="705" y="185" class="lbl" text-anchor="middle" style="fill:#8b2820; font-weight:600;">时长上限比较</text>
+      <text x="705" y="203" class="lbl-dim" text-anchor="middle" style="font-size:10px;">≥ 5 分钟？</text>
+      <text x="705" y="220" class="lbl-dim" text-anchor="middle" style="font-size:10px;">→ 边沿检测 → 自动下一首</text>
+
+      <line x1="790" y1="180" x2="820" y2="180" stroke="#8b2820" stroke-width="1"/>
+      <path d="M 820 180 Q 850 180 850 200 L 850 240 Q 850 250 840 250 L 510 250 L 510 210" stroke="#8b2820" stroke-width="1" fill="none" marker-end="url(#ar6)" style="marker-end:url(#ar6); stroke:#8b2820;"/>
+
+      <line x1="790" y1="100" x2="870" y2="100" stroke="#4d6b2a" stroke-width="1"/>
+      <text x="900" y="105" class="lbl-dim" style="font-size:10px;">→ 显示</text>
+    </svg>
+  </div>
+
+  <div class="card info">
+    <div class="card-title">为什么用"时长上限"而不是真实曲长？</div>
+    <p>
+      <strong>NSF 格式本身没有曲长字段</strong>——它是 6502 程序，理论上能无限循环。
+      连 NSFPlay 这种大软件也是用"默认播放 N 分钟然后淡出"处理的。<br>
+      所以我们也这么做：用户可以设置上限（DIP 开关 4/5/8 分钟），到了自动切下一首。
+      ROM 里只存一个完整循环，硬件自动 PC 清零无缝循环播放。
+    </p>
+  </div>
+</section>
+
+<!-- ============ S9 ============ -->
+<section id="s9">
+  <div class="sec-label">
+    <span class="sec-num">09</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Extension · 可视化</span>
+  </div>
+  <h2>可视化扩展位（预留）</h2>
+  <p>
+    为后期想加的<em>钢琴键盘可视化</em>和<em>计时条</em>提前预留接口。
+    现阶段建一个空的 <code>Display</code> 子电路占位，主电路布线一次到位。
+  </p>
+
+  <h3><span class="num">▸</span>预留信号接口</h3>
+  <table>
+    <thead>
+      <tr><th>信号名</th><th>位宽</th><th>来源</th><th>用途</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>elapsed_min</code></td><td>8-bit</td><td>计时器</td><td>分钟显示</td></tr>
+      <tr><td><code>elapsed_sec</code></td><td>6-bit</td><td>计时器</td><td>秒数显示</td></tr>
+      <tr><td><code>limit_min</code></td><td>4-bit</td><td>DIP 开关</td><td>用户设定上限</td></tr>
+      <tr><td><code>track_id</code></td><td>4-bit</td><td>曲目计数器</td><td>当前曲目编号</td></tr>
+      <tr><td><code>freq_ch1..4</code></td><td>11-bit ×4</td><td>APU 寄存器</td><td>音高 → 钢琴键</td></tr>
+      <tr><td><code>vol_ch1..4</code></td><td>4-bit ×4</td><td>APU 寄存器</td><td>判断是否在响</td></tr>
+      <tr><td><code>midi_key_ch1..4</code></td><td>7-bit ×4</td><td>WKEY 指令</td><td>直接读 MIDI 音符（脚本预编码）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card info">
+    <div class="card-title">建议：在 Display 子电路里加帧采样器</div>
+    <p>
+      可视化更新频率不需要和 CPU 时钟同步（人眼 30 Hz 就够）。
+      子电路入口加一组采样寄存器 + 30 Hz 慢时钟，CPU 跑得再快也只采样到稳定帧。
+      这相当于给显示加了"帧缓冲"，能避免画面抖动且节省组件资源。
+    </p>
+  </div>
+</section>
+
+<!-- ============ S10 ============ -->
+<section id="s10">
+  <div class="sec-label">
+    <span class="sec-num">10</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Team · 四人分工</span>
+  </div>
+  <h2>四人分工方案</h2>
+  <p class="lead">
+    四个角色，<strong>组长</strong>负责统筹和补位，其他三人各主攻一块。
+    三大块工作可<em>并行推进</em>，前期不互相阻塞。
+  </p>
+
+  <div class="role-grid">
+    <div class="role leader">
+      <div class="badge">LEAD</div>
+      <div class="role-name">ROLE A · Team Lead</div>
+      <div class="role-title">组长 / 系统集成</div>
+      <p class="role-desc">
+        统筹三方进度、维护接口约定、负责系统联调。技术上每块都参与一点，是最了解全局的人。
+      </p>
+      <ul>
+        <li>制定并维护 ROM 格式、MMIO 地址映射、寄存器位定义文档</li>
+        <li>搭建顶层电路框架（连接 CPU/APU/控制面板/Display 子电路）</li>
+        <li>负责<strong>控制面板和计时器</strong>整块（这部分相对独立）</li>
+        <li>负责系统联调，三方接口出问题时第一个跳出来</li>
+        <li>遇到队友卡住时<em>补位帮忙</em>——哪里弱往哪里去</li>
+        <li>准备验收 demo 和答辩材料</li>
+      </ul>
+    </div>
+
+    <div class="role">
+      <div class="role-name">ROLE B · Software</div>
+      <div class="role-title">转换脚本组</div>
+      <p class="role-desc">
+        负责 NSF → ROM 映像的离线工具链。<em>纯软件工作</em>，前期可独立推进，不依赖 Logisim 部分。
+      </p>
+      <ul>
+        <li>定位 NSFPlay 的 APU 写寄存器函数，加 log hook</li>
+        <li>编译 NSFPlay，跑示范曲 dump 出 reg log</li>
+        <li>用 Python 解析 reg log</li>
+        <li>实现时钟/频率缩放算法（关键难点）</li>
+        <li>检测 DMC 写入并跳过</li>
+        <li>编码成自定义指令格式输出 <code>.txt</code></li>
+        <li><strong>识别颤音/渐变模式，生成 ADD/SUB 指令</strong>（让 ALU 用上）</li>
+        <li>批量处理多首曲库 + 检测循环点</li>
+        <li>预留 MIDI 音符号字段（可视化用）</li>
+      </ul>
+    </div>
+
+    <div class="role">
+      <div class="role-name">ROLE C · CPU</div>
+      <div class="role-title">CPU 设计组</div>
+      <p class="role-desc">
+        负责 Logisim 里的五段 CPU。<em>验收时这块最受关注</em>，要做扎实。
+      </p>
+      <ul>
+        <li>设计自定义指令集（5 条回放 + 4 条运算 + END）</li>
+        <li>实现 IF/ID/EX/MEM/WB 五个阶段（单周期）</li>
+        <li>WAIT 指令的 stall 机制（关键难点）</li>
+        <li><strong>ALU（ADD/SUB）+ 4 个通用寄存器 R0-R3</strong></li>
+        <li>MMIO 地址译码（CPU→APU 接口）</li>
+        <li>PC 控制（顺序 +1 / 复位 / 保持）</li>
+        <li>END 信号 + 切歌响应</li>
+        <li>ALU 可视化（R0-R3 接 Hex Display 供验收演示）</li>
+      </ul>
+    </div>
+
+    <div class="role">
+      <div class="role-name">ROLE D · APU</div>
+      <div class="role-title">APU 设计组</div>
+      <p class="role-desc">
+        负责音频合成 + 输出。<em>这块最有"出活"的成就感</em>——一旦做完就能听到声音。
+      </p>
+      <ul>
+        <li>设计寄存器组结构（16 组 D 触发器 + 写使能）</li>
+        <li>实现频率换算逻辑（timer → Hz）</li>
+        <li>Pulse 通道占空比 MUX</li>
+        <li>Noise 通道周期索引查找表</li>
+        <li>$4015 通道使能门控</li>
+        <li>4 路 Buzzer 接线 + 波形属性配置</li>
+        <li>调试不同 NES 曲目的音色效果</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="num">▸</span>四方接口约定（必须提前对齐！）</h3>
+  <div class="card warning">
+    <div class="card-title">接口文档由组长（A）维护，三方共同遵守</div>
+    <ul>
+      <li><strong>A ↔ B</strong>：ROM 格式约定（指令编码表，见第 5 节）。脚本输出 = CPU 输入。</li>
+      <li><strong>A ↔ C</strong>：CPU 提供的对外信号（PC、END 信号、stall 状态）。</li>
+      <li><strong>A ↔ D</strong>：APU 寄存器组的写使能接口。$4015 通道使能位定义。</li>
+      <li><strong>C ↔ D</strong>：MMIO 地址映射。CPU 写 <code>$4000–$400F</code> 落到 APU 哪个寄存器。</li>
+      <li><strong>B ↔ D</strong>：APU 寄存器位定义跟 nesdev wiki 走，三方共同参考同一份文档。</li>
+    </ul>
+  </div>
+
+  <div class="card good">
+    <div class="card-title">第一周建议先做的事</div>
+    <p>
+      <strong>所有人</strong>：通读 nesdev wiki 的 APU 章节<br>
+      <strong>A</strong>：起草接口文档第一版，开 git 仓库<br>
+      <strong>B</strong>：搭 Python 环境，跑通 NSFPlay 导出日志<br>
+      <strong>C</strong>：在 Logisim 里搭一个最简单的"PC + ROM + 译码"看效果<br>
+      <strong>D</strong>：在 Logisim 里玩 Buzzer 组件，测试不同 waveform 属性下的声音<br>
+      <em>一周后碰一次，对齐接口、调整方案。</em>
+    </p>
+  </div>
+</section>
+
+<!-- ============ S11 MILESTONE ============ -->
+<section id="s11">
+  <div class="sec-label">
+    <span class="sec-num">11</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Milestone · 里程碑规划</span>
+  </div>
+  <h2>30 天到验收</h2>
+  <p class="lead">
+    今天是 <strong>5 月 16 日（周六）</strong>，验收 <strong>6 月 15 日（周日）</strong>，共 <em>30 天</em>。
+    划分成 4 个周期，每个周期有明确的 demo 标准——不是"做完了"，而是"<strong>能演示什么、能听到什么</strong>"。
+    最后留 3 天 buffer 应对 bug 和验收准备。
+  </p>
+
+  <h3><span class="num">▸</span>甘特图概览</h3>
+  <div class="gantt">
+    <div class="gantt-row header">
+      <div class="gantt-label">任务 / 负责人</div>
+      <div>5/16 ←————————————————————————————————→ 6/15</div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">通读文档 · 全员</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar all" style="left: 0%; width: 16%;">调研</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">接口文档 · A</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-a" style="left: 3%; width: 20%;">起草 + 维护</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">脚本工具链 · B</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-b" style="left: 3%; width: 30%;">脚本核心</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">CPU 五段 · C</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-c" style="left: 6%; width: 36%;">CPU 实现</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">APU 通道 · D</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-d" style="left: 6%; width: 30%;">4 通道</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">控制面板 · A</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-a" style="left: 33%; width: 22%;">面板 + 计时</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">系统联调 · 全员</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar all" style="left: 50%; width: 26%;">CPU+APU+面板集成</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">真实 NSF 测试 · D+B</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-d" style="left: 66%; width: 17%;">音色调参</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">可视化扩展 · 选做</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar role-a" style="left: 73%; width: 17%; opacity: 0.6;">钢琴/进度条</div>
+      </div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">验收准备 · 全员</div>
+      <div class="gantt-bar-container">
+        <div class="gantt-bar all" style="left: 90%; width: 10%;">Buffer + 答辩</div>
+      </div>
+    </div>
+
+    <div class="gantt-scale">
+      <div class="gantt-scale-day milestone">M1</div>
+      <div class="gantt-scale-day">17</div>
+      <div class="gantt-scale-day">18</div>
+      <div class="gantt-scale-day">19</div>
+      <div class="gantt-scale-day">20</div>
+      <div class="gantt-scale-day">21</div>
+      <div class="gantt-scale-day milestone">M2</div>
+      <div class="gantt-scale-day">23</div>
+      <div class="gantt-scale-day">24</div>
+      <div class="gantt-scale-day">25</div>
+      <div class="gantt-scale-day">26</div>
+      <div class="gantt-scale-day">27</div>
+      <div class="gantt-scale-day">28</div>
+      <div class="gantt-scale-day">29</div>
+      <div class="gantt-scale-day">30</div>
+      <div class="gantt-scale-day">31</div>
+      <div class="gantt-scale-day milestone">M3</div>
+      <div class="gantt-scale-day">2</div>
+      <div class="gantt-scale-day">3</div>
+      <div class="gantt-scale-day">4</div>
+      <div class="gantt-scale-day">5</div>
+      <div class="gantt-scale-day">6</div>
+      <div class="gantt-scale-day">7</div>
+      <div class="gantt-scale-day milestone">M4</div>
+      <div class="gantt-scale-day">9</div>
+      <div class="gantt-scale-day">10</div>
+      <div class="gantt-scale-day">11</div>
+      <div class="gantt-scale-day">12</div>
+      <div class="gantt-scale-day">13</div>
+      <div class="gantt-scale-day">14</div>
+      <div class="gantt-scale-day deadline">★</div>
+    </div>
+  </div>
+
+  <h3><span class="num">▸</span>4 个里程碑详细</h3>
+
+  <div class="milestone-grid">
+
+    <!-- M1 -->
+    <div class="milestone">
+      <div class="milestone-head">
+        <div class="milestone-name">
+          <span class="tag">M1</span>
+          调研 & 接口确定
+        </div>
+        <div class="milestone-date">5/16 — 5/22 · 第 1 周</div>
+      </div>
+      <div class="milestone-body">
+        <div class="milestone-section">
+          <div class="milestone-section-title">本周完成</div>
+          <ul>
+            <li><strong>全员</strong>：通读 nesdev wiki APU 章节、Logisim Evolution 用户手册</li>
+            <li><strong>A</strong>：建 git 仓库，起草接口文档（指令编码、MMIO 地址表、寄存器位定义）</li>
+            <li><strong>B</strong>：定位 NSFPlay 的 APU 写寄存器函数，加 log，编译跑通，能从一个 .nsf dump 出寄存器写入日志</li>
+            <li><strong>C</strong>：在 Logisim 里搭"PC + ROM"原型（PC 自动递增，从 ROM 取出指令字显示在 LED）</li>
+            <li><strong>D</strong>：在 Logisim 里手动调 Buzzer 属性，测试 square / triangle / noise 三种波形听感</li>
+          </ul>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">M1 Demo 标准（5/22 晚碰头）</div>
+          <div class="demo-criterion">
+            <strong>能展示：</strong>① B 演示一个 .nsf 文件被 dump 成寄存器写入文本日志；
+            ② C 演示一个 PC 在 ROM 上自动跑、LED 显示当前指令；
+            ③ D 演示 Buzzer 接固定值发出 square/triangle/noise 三种声音；
+            ④ A 提交一份所有人都看过且认可的接口文档第一版。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M2 -->
+    <div class="milestone">
+      <div class="milestone-head">
+        <div class="milestone-name">
+          <span class="tag">M2</span>
+          核心模块独立完成
+        </div>
+        <div class="milestone-date">5/23 — 6/1 · 第 2-3 周</div>
+      </div>
+      <div class="milestone-body">
+        <div class="milestone-section">
+          <div class="milestone-section-title">10 天内完成</div>
+          <ul>
+            <li><strong>B</strong>：脚本能输出符合指令格式的 ROM 映像 .txt；时钟/频率缩放算法跑通；DMC 跳过逻辑完成；颤音/渐变模式能生成 ADD/SUB</li>
+            <li><strong>C</strong>：CPU 五段全部完成（IF/ID/EX/MEM/WB）；WAIT 指令 stall 机制正确；<strong>ALU 加减 + 4 个通用寄存器完成</strong>；END 信号能输出</li>
+            <li><strong>D</strong>：4 个 APU 通道全部独立可发声（手动写寄存器值能听到对应通道响）；$4015 通道使能正确</li>
+            <li><strong>A</strong>：跟进各组进度，发现接口偏差时及时召集对齐</li>
+          </ul>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">M2 Demo 标准（6/1 晚碰头）</div>
+          <div class="demo-criterion">
+            <strong>能展示：</strong>① B 把一首真实 NSF 转成 ROM 映像（即便没法运行，文件本身格式正确）；
+            ② C 用手工写的测试 ROM 跑 CPU，PC 按预期递增、WAIT 能正确停 N 个周期、END 触发复位；
+            <strong>跑一段 LOADI + ADD/SUB，R0-R3 显示正确的运算结果</strong>；
+            ③ D 手动写 4 个通道的寄存器，能<em>同时</em>听到 4 个 Buzzer 发声（音高音量各自独立）；
+            ④ 全员确认接口对齐没有偏差。
+          </div>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">⚠ 风险预警</div>
+          <ul>
+            <li>这是最长的一个里程碑（10 天），中间容易松懈。<strong>5/27 设一个 mini-check</strong>：各组同步进度，未达 50% 的紧急对齐</li>
+            <li>如果 C 卡在 WAIT 指令实现，A 立即介入帮忙——这是验收最重要的部分</li>
+            <li>ALU 加减不复杂（一个加法器 + 减法器 + MUX），但<strong>必须 M2 内完成</strong>，不要拖到联调期改 CPU 接口</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- M3 -->
+    <div class="milestone">
+      <div class="milestone-head">
+        <div class="milestone-name">
+          <span class="tag">M3</span>
+          联调成功 · 第一次出声
+        </div>
+        <div class="milestone-date">6/2 — 6/8 · 第 4 周</div>
+      </div>
+      <div class="milestone-body">
+        <div class="milestone-section">
+          <div class="milestone-section-title">本周完成</div>
+          <ul>
+            <li>把 CPU 和 APU 通过 MMIO 接起来（A 主导，C 和 D 配合）</li>
+            <li>用 B 生成的测试曲（先用<em>手写音阶</em>，再用真实 NSF）跑通完整链路</li>
+            <li>A 完成控制面板：播放/暂停/停止/上下首按钮 + MM:SS 计时器 + 自动切歌</li>
+            <li>调整时钟缩放参数，找到"速度和音高都能接受"的折中点</li>
+            <li>主电路里建空的 Display 子电路占位（接口预留好）</li>
+          </ul>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">M3 Demo 标准（6/8 晚）</div>
+          <div class="demo-criterion">
+            <strong>能展示：</strong>① 整个系统跑起来——点"播放"按钮，Logisim 输出真实可识别的 NES 音乐；
+            ② 演示暂停/继续/停止/上下首功能；
+            ③ 计时器 MM:SS 正常走动，到上限自动切下一首；
+            ④ 至少能成功播放 <strong>3 首不同的 NSF 曲目</strong>（证明不是"针对单首歌调出来的"）。
+          </div>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">这是项目的"<em>能交差</em>"节点</div>
+          <ul>
+            <li>到 M3 即便后面全员摆烂，也能保证拿一个能交的作业去验收</li>
+            <li>剩下 7 天就是优化和加分项，心态会从容很多</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- M4 -->
+    <div class="milestone">
+      <div class="milestone-head">
+        <div class="milestone-name">
+          <span class="tag">M4</span>
+          打磨 · 扩展 · 验收准备
+        </div>
+        <div class="milestone-date">6/9 — 6/15 · 最后一周</div>
+      </div>
+      <div class="milestone-body">
+        <div class="milestone-section">
+          <div class="milestone-section-title">本周完成</div>
+          <ul>
+            <li>批量处理 NSF 曲库——准备 8-16 首歌烧进多个 ROM</li>
+            <li>音色调优（调时钟缩放、频率换算精度、音量比例）</li>
+            <li><em>选做</em>：填充 Display 子电路，加钢琴键盘可视化 + 计时条</li>
+            <li>整理 git 仓库结构、写 README、注释关键电路</li>
+            <li>准备验收 PPT / Demo 流程脚本</li>
+            <li>预演 1-2 次答辩，互相提问检查薄弱点</li>
+          </ul>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">最后 3 天（6/13-6/15）严格 buffer</div>
+          <ul>
+            <li><strong>不再写新功能</strong>，只修 bug 和润色</li>
+            <li>把 .circ 文件备份多份，避免 Logisim 损坏文件的悲剧</li>
+            <li>提前准备好"如果 X 坏了用 Y 演示"的 Plan B</li>
+          </ul>
+        </div>
+        <div class="milestone-section">
+          <div class="milestone-section-title">M4 Demo 标准（6/15 验收）</div>
+          <div class="demo-criterion">
+            <strong>验收当天演示：</strong>① 五段 CPU 数据通路讲解清晰，能回答"WAIT 指令怎么 stall 的"、"ALU 支持哪些运算"；
+            ② <strong>现场改 ROM 演示 ALU 加减</strong>（R0-R3 实时显示）；
+            ③ 演示 ≥ 5 首不同 NSF 音乐播放；④ 控制面板所有功能正常；
+            ⑤ 能解释为什么砍 DMC、为什么 Triangle 用平滑波形——展示"<em>做了工程取舍</em>"而不是"做不出来"。
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h3><span class="num">▸</span>每周固定碰头</h3>
+  <div class="card info">
+    <div class="card-title">建议每周日晚 9 点（30 分钟）</div>
+    <p>
+      不要拖到最后才发现问题。每周日固定开会，每人说三件事：<br>
+      <strong>1)</strong> 这周做完了什么（拿 demo 出来）<br>
+      <strong>2)</strong> 下周准备做什么<br>
+      <strong>3)</strong> 卡住的地方 / 需要别人配合的事<br>
+      <em>开会时长不超过 30 分钟。超时说明问题太多，应该拆成 1v1 单独解决。</em>
+    </p>
+  </div>
+</section>
+
+<!-- ============ S12 REFERENCES ============ -->
+<section id="s12">
+  <div class="sec-label">
+    <span class="sec-num">12</span>
+    <div class="sec-bar"></div>
+    <span class="sec-tag">Reference · 参考资料</span>
+  </div>
+  <h2>官方文档 & 参考链接</h2>
+  <p class="lead">
+    遇到具体组件不会用、属性不知道怎么配、寄存器位定义记不清的时候——<strong>看官方文档</strong>，不要凭印象。
+  </p>
+
+  <h3><span class="num">▸</span>Logisim Evolution 官方资源</h3>
+  <div class="ref-grid">
+    <a class="ref-card" href="https://github.com/logisim-evolution/logisim-evolution" target="_blank" rel="noopener">
+      <div class="ref-tag">主仓库</div>
+      <div class="ref-title">官方 GitHub Repository</div>
+      <div class="ref-desc">下载最新版 .jar、查看更新日志、提 issue。要求 Java 21+。</div>
+      <div class="ref-url">github.com/logisim-evolution/logisim-evolution</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/" target="_blank" rel="noopener">
+      <div class="ref-tag">完整用户手册</div>
+      <div class="ref-title">Logisim Evolution Documentation</div>
+      <div class="ref-desc">最完整的官方文档站，含 User Guide + Library Reference，<strong>有中文版</strong>（ZH 链接）。</div>
+      <div class="ref-url">mbaillif.github.io/Logisim-evolution-documentation/</div>
+    </a>
+    <a class="ref-card" href="https://github.com/logisim-evolution/logisim-evolution/wiki" target="_blank" rel="noopener">
+      <div class="ref-tag">FAQ + Wiki</div>
+      <div class="ref-title">官方 Wiki</div>
+      <div class="ref-desc">FAQ、菜单栏说明、<em>如何把汇编程序加载到 ROM</em>（重要！）。</div>
+      <div class="ref-url">github.com/logisim-evolution/logisim-evolution/wiki</div>
+    </a>
+    <a class="ref-card" href="https://github.com/logisim-evolution/logisim-evolution/blob/main/docs/docs.md" target="_blank" rel="noopener">
+      <div class="ref-tag">仿真限制</div>
+      <div class="ref-title">docs.md · 已知限制</div>
+      <div class="ref-desc">务必先看一遍：双向引脚不支持、存储元件初值规则、晶体管简化模拟等。</div>
+      <div class="ref-url">github.com/logisim-evolution/logisim-evolution/blob/main/docs/docs.md</div>
+    </a>
+  </div>
+
+  <h3><span class="num">▸</span>组件库手册（按角色分）</h3>
+  <p>遇到具体组件不会用时直接查这些页面：</p>
+
+  <h4 style="color: var(--purple);">A · 组长 / 控制面板 / 顶层集成</h4>
+  <div class="ref-grid">
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/io/button.html" target="_blank" rel="noopener">
+      <div class="ref-tag">I/O Library</div>
+      <div class="ref-title">Button 按钮</div>
+      <div class="ref-desc">播放/暂停/上下首按钮的实现基础。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/flipflops.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Memory Library</div>
+      <div class="ref-title">D/T/J-K/S-R Flip-Flop</div>
+      <div class="ref-desc">暂停标志位、状态记忆都用 D-FF。注意触发方式选 Rising edge。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/io/7seg.html" target="_blank" rel="noopener">
+      <div class="ref-tag">I/O Library</div>
+      <div class="ref-title">7-Segment Display</div>
+      <div class="ref-desc">MM:SS 计时器的数字显示。组合两组可显示分:秒。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/wiring/clock.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Wiring Library</div>
+      <div class="ref-title">Clock 时钟</div>
+      <div class="ref-desc">系统主时钟、1 Hz 计时时钟、30 Hz 显示采样时钟。可调速。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/guide/subcirc/index.html" target="_blank" rel="noopener">
+      <div class="ref-tag">User Guide</div>
+      <div class="ref-title">Sub-circuits 子电路</div>
+      <div class="ref-desc">顶层电路怎么实例化 CPU/APU/Display 子电路。接口端口怎么定义。</div>
+    </a>
+  </div>
+
+  <h4 style="color: var(--cyan);">B · 转换脚本组</h4>
+  <div class="ref-grid">
+    <a class="ref-card" href="https://www.nesdev.org/wiki/NSF" target="_blank" rel="noopener">
+      <div class="ref-tag">NESDEV Wiki</div>
+      <div class="ref-title">NSF 文件格式规范</div>
+      <div class="ref-desc">.nsf 文件结构、Header、Bank Switching、PLAY/INIT 子程序入口。脚本要解析这个。</div>
+      <div class="ref-url">nesdev.org/wiki/NSF</div>
+    </a>
+    <a class="ref-card" href="https://www.nesdev.org/wiki/APU" target="_blank" rel="noopener">
+      <div class="ref-tag">NESDEV Wiki</div>
+      <div class="ref-title">APU 寄存器规范（核心！）</div>
+      <div class="ref-desc">$4000-$4017 每个寄存器的每一位都讲得很清楚。全员必读。</div>
+      <div class="ref-url">nesdev.org/wiki/APU</div>
+    </a>
+    <a class="ref-card" href="https://www.nesdev.org/wiki/APU_DMC" target="_blank" rel="noopener">
+      <div class="ref-tag">NESDEV Wiki</div>
+      <div class="ref-title">APU DMC 寄存器（要跳过的）</div>
+      <div class="ref-desc">$4010-$4013 是 DMC 寄存器，脚本检测到这些地址就 skip。</div>
+    </a>
+    <a class="ref-card" href="https://github.com/bbbradsmith/nsfplay" target="_blank" rel="noopener">
+      <div class="ref-tag">主 hook 目标</div>
+      <div class="ref-title">NSFPlay (Brad's fork)</div>
+      <div class="ref-desc">已克隆在 <code>ref/nsfplay/</code>。找它的 NES APU 写寄存器函数（<code>NES_APU::Write</code> 之类），加 log 即可 dump 寄存器序列。</div>
+      <div class="ref-url">github.com/bbbradsmith/nsfplay</div>
+    </a>
+    <a class="ref-card" href="https://github.com/libgme/game-music-emu" target="_blank" rel="noopener">
+      <div class="ref-tag">备选 hook 目标</div>
+      <div class="ref-title">game-music-emu (libgme)</div>
+      <div class="ref-desc">已克隆在 <code>ref/game-music-emu/</code>。blargg 的库，代码更小更好编译。<code>Nes_Apu::write_register</code> 是统一写入入口。NSFPlay 编译难时用它。</div>
+      <div class="ref-url">github.com/libgme/game-music-emu</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/rom.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Logisim 文档</div>
+      <div class="ref-title">ROM 组件 · 文件格式</div>
+      <div class="ref-desc">脚本输出的 ROM 映像 .txt 格式：第一行 <code>v2.0 raw</code>，然后空格分隔的十六进制。</div>
+    </a>
+  </div>
+
+  <h4 style="color: var(--purple);">C · CPU 组</h4>
+  <div class="ref-grid">
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/rom.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Memory Library</div>
+      <div class="ref-title">ROM 指令存储器</div>
+      <div class="ref-desc">指令 ROM 配置：Address Bit Width = 16，Data Bit Width = 16（16-bit 等长指令）。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/register.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Memory Library</div>
+      <div class="ref-title">Register 寄存器</div>
+      <div class="ref-desc">PC 寄存器、等待计数器、各段流水寄存器都用这个。比一堆 D-FF 直观。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/arith/adder.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Arithmetic Library</div>
+      <div class="ref-title">Adder / Subtractor</div>
+      <div class="ref-desc">PC+1、WaitCounter 递减、<strong>ALU 的 ADD/SUB 运算</strong>都靠加减法器。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/plexers/mux.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Plexers Library</div>
+      <div class="ref-title">Multiplexer / Demultiplexer</div>
+      <div class="ref-desc">PC 更新逻辑、<strong>ALU 结果选择（ADD/SUB）</strong>、通用寄存器读写选择都用 MUX；MMIO 译码用 DEMUX。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/wiring/splitter.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Wiring Library</div>
+      <div class="ref-title">Splitter 总线分线器</div>
+      <div class="ref-desc">从 16-bit 指令字拆出 opcode (高 4 位) / reg_id / value 等字段。<em>非常常用</em>。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/plexers/decoder.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Plexers Library</div>
+      <div class="ref-title">Decoder 译码器</div>
+      <div class="ref-desc">opcode 译码成"is_wait / is_write / is_end"等控制信号的核心组件。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/arith/comp.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Arithmetic Library</div>
+      <div class="ref-title">Comparator 比较器</div>
+      <div class="ref-desc">"等待计数器 > 0?" → stall 信号。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/wiring/tunnel.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Wiring Library</div>
+      <div class="ref-title">Tunnel 隧道</div>
+      <div class="ref-desc">五段数据通路布线很乱时用 Tunnel 命名连接，比拉一堆长线清晰。</div>
+    </a>
+  </div>
+
+  <h4 style="color: var(--green);">D · APU 组</h4>
+  <div class="ref-grid">
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/ioextra/exbuzzer.html" target="_blank" rel="noopener">
+      <div class="ref-tag">I/O Extra Library</div>
+      <div class="ref-title">Buzzer 蜂鸣器（最重要！）</div>
+      <div class="ref-desc">完整引脚定义、5 种波形属性、频率范围 20Hz–20kHz。<strong>D 必读</strong>。</div>
+      <div class="ref-url">mbaillif.github.io/.../libs/ioextra/exbuzzer.html</div>
+    </a>
+    <a class="ref-card" href="https://www.nesdev.org/wiki/APU_Pulse" target="_blank" rel="noopener">
+      <div class="ref-tag">NESDEV Wiki</div>
+      <div class="ref-title">APU Pulse 通道</div>
+      <div class="ref-desc">$4000-$4007 寄存器、占空比序列表、频率计算公式。</div>
+    </a>
+    <a class="ref-card" href="https://www.nesdev.org/wiki/APU_Triangle" target="_blank" rel="noopener">
+      <div class="ref-tag">NESDEV Wiki</div>
+      <div class="ref-title">APU Triangle 通道</div>
+      <div class="ref-desc">$4008-$400B 寄存器，注意 Triangle 没有音量寄存器（只能响/不响）。</div>
+    </a>
+    <a class="ref-card" href="https://www.nesdev.org/wiki/APU_Noise" target="_blank" rel="noopener">
+      <div class="ref-tag">NESDEV Wiki</div>
+      <div class="ref-title">APU Noise 通道</div>
+      <div class="ref-desc">$400C-$400F 寄存器、噪声周期表 16 项数值（我们要把这个表做成查找 ROM）。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/rom.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Memory Library</div>
+      <div class="ref-title">ROM 查找表</div>
+      <div class="ref-desc">Noise 周期表、频率换算表都用 ROM 实现（不用真除法器）。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/flipflops.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Memory Library</div>
+      <div class="ref-title">D Flip-Flop / Register</div>
+      <div class="ref-desc">APU 寄存器组 = 16 组 8-bit Register，每组有自己的 write enable。</div>
+    </a>
+    <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/plexers/mux.html" target="_blank" rel="noopener">
+      <div class="ref-tag">Plexers Library</div>
+      <div class="ref-title">Multiplexer</div>
+      <div class="ref-desc">Pulse 通道的占空比选择：4 种占空比 → 8-bit Buzzer Duty Cycle 输入。</div>
+    </a>
+  </div>
+
+  <h3><span class="num">▸</span>额外的参考</h3>
+  <div class="ref-grid">
+    <a class="ref-card" href="https://github.com/andkorzh/RP2A03-7-" target="_blank" rel="noopener">
+      <div class="ref-tag">★ 高价值参考</div>
+      <div class="ref-title">RP2A03 · Logisim 版 APU 电路</div>
+      <div class="ref-desc">逆向工程做的 2A03 APU，<strong>有现成的 Logisim 电路图</strong>。D 组想看"硬件级 APU 长什么样"必看（不过我们方案更简单，用 Buzzer）。</div>
+      <div class="ref-url">github.com/andkorzh/RP2A03-7-</div>
+    </a>
+    <a class="ref-card" href="https://github.com/gridbugs/nes-audio-playground" target="_blank" rel="noopener">
+      <div class="ref-tag">★ 高价值参考</div>
+      <div class="ref-title">nes-audio-playground</div>
+      <div class="ref-desc">生成"能控制 APU 寄存器的 NES ROM"的工具，<em>思路和我们"塞 ROM 跑 APU 寄存器"几乎一样</em>。B/C 组参考它怎么组织寄存器写入。</div>
+      <div class="ref-url">github.com/gridbugs/nes-audio-playground</div>
+    </a>
+    <a class="ref-card" href="https://www.icochise.com/docs/logisim.pdf" target="_blank" rel="noopener">
+      <div class="ref-tag">教程</div>
+      <div class="ref-title">Logisim-Evolution Lab Manual (PDF)</div>
+      <div class="ref-desc">iCochise 出的实验手册，例子丰富，入门最佳。</div>
+    </a>
+    <a class="ref-card" href="https://www.nesdev.org/wiki/Nesdev_Wiki" target="_blank" rel="noopener">
+      <div class="ref-tag">维基</div>
+      <div class="ref-title">NESDEV Wiki 主页</div>
+      <div class="ref-desc">NES 硬件文档圣经，所有 2A03 细节都在这里（你已下载离线版）。</div>
+    </a>
+    <a class="ref-card" href="https://www.zophar.net/music/nintendo-nes-nsf" target="_blank" rel="noopener">
+      <div class="ref-tag">资源</div>
+      <div class="ref-title">Zophar's Domain · NSF 曲库</div>
+      <div class="ref-desc">大量开源 NSF 文件下载，分游戏分类。</div>
+    </a>
+    <a class="ref-card" href="https://github.com/bbbradsmith/nes-audio-tests" target="_blank" rel="noopener">
+      <div class="ref-tag">测试素材</div>
+      <div class="ref-title">nes-audio-tests</div>
+      <div class="ref-desc">NES 音频测试 NSF/ROM，结构简单干净，适合当转换脚本的<em>第一批测试输入</em>。</div>
+    </a>
+  </div>
+
+  <div class="card good">
+    <div class="card-title">在 Logisim 里查文档的小技巧</div>
+    <p>
+      Logisim Evolution 内置帮助系统：选中任意组件 → 右键 → <code>Show Component Help</code> →
+      直接打开该组件的文档页（其实就是 mbaillif 那个站的镜像）。<em>不用搜索，最快</em>。
+    </p>
+  </div>
+</section>
+
+<footer>
+  <span>2A03 Player · Logisim Build</span>
+  <span>Project Brief · v6 · NSFPlay 直采</span>
+  <span>Doc generated · 2026.05.16</span>
+</footer>
+
+</div>
+</body>
+</html>
