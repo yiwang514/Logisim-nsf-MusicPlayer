@@ -179,7 +179,7 @@
     <tr><td>技术路线</td><td>成立</td><td>离线脚本输出 16-bit ROM；Logisim ROM/Buzzer/Register/Mux 都能覆盖所需组件。</td></tr>
     <tr><td>最大正确性风险</td><td>Buzzer 性能与声音伪真度</td><td>Logisim Buzzer 每次输入变化会重建音频缓冲并开新 Clip，本地源码还显示 sound thread 是忙循环。</td></tr>
     <tr><td>最大工期风险</td><td>硬件电路尚未开始</td><td>`coolproject.circ` 只有空的 `main` 电路，脚本完成不等于可演示。</td></tr>
-    <tr><td>推荐目标</td><td>先保 1 首、4 声道、五段 CPU、ALU demo</td><td>这四项最能证明课程要求；多曲、计时、可视化都是锦上添花。</td></tr>
+    <tr><td>推荐目标</td><td>先保 1 首、4 声道、五段 CPU、ALU 变速播放 + 可视化 demo</td><td>真实音乐播放时 ALU 参与 WAIT 周期加减；R0-R3 demo 只作为验收时的直观证明。</td></tr>
   </table>
 </section>
 
@@ -235,7 +235,7 @@
   <h2>04 · 必须按本指南修正的点</h2>
   <table>
     <tr><th>旧说法 / 风险</th><th>修正后的做法</th><th>状态</th></tr>
-    <tr><td>NSFPlay hook</td><td>继续用 GME hook。`Nes_Apu::write_register(time,addr,data)` 是单入口，`script/gme_dump/PATCH.md` 已记录。</td><td><span class="badge ok">固定</span></td></tr>
+    <tr><td>旧 hook 目标</td><td>继续用 GME hook。`Nes_Apu::write_register(time,addr,data)` 是单入口，`script/gme_dump/PATCH.md` 已记录。</td><td><span class="badge ok">固定</span></td></tr>
     <tr><td>PC 12-bit</td><td>PC、指令 ROM 地址、ROM MUX 输出选择全部按 16-bit 字地址做。</td><td><span class="badge ok">固定</span></td></tr>
     <tr><td>频率随 Logisim 时钟缩放</td><td>Buzzer 频率输入用真实 Hz；只用 CPU tick 和 `frame_cycles` 调节节奏。</td><td><span class="badge ok">固定</span></td></tr>
     <tr><td>WAIT 每帧恒 1</td><td>`encode.py` 已改为固定帧预算：每帧写完后补 `WAIT = frame_cycles - writes`。</td><td><span class="badge ok">已完成</span></td></tr>
@@ -251,7 +251,7 @@
   -> GME dumper: 每次 PLAY 帧 + 每次 APU write
   -> log: "frame addr value"
   -> encode.py: 16-bit 指令 ROM, 固定 frame_cycles
-  -> Logisim CPU: WAIT / WRITE / END + ALU demo
+  -> Logisim CPU: WAIT / WRITE / END + ALU tempo control
   -> Logisim APU: 2 pulse + triangle + noise -> 4 个 Buzzer
   -> 控制面板: play/pause/stop/next/prev/timer</pre>
   <h3>指令集以“硬件最简”为优先</h3>
@@ -260,7 +260,7 @@
     <tr><td>`0x0 WAIT imm12`</td><td>等待 imm 个 CPU tick</td><td>必须，注意 busy 状态机。</td></tr>
     <tr><td>`0x1 WRITE reg,val`</td><td>写 APU 寄存器</td><td>必须，真实音乐只靠它和 WAIT/END 就能跑。</td></tr>
     <tr><td>`0x2 LWAIT + next word`</td><td>长等待</td><td>做译码入口即可；当前 ROM 基本不需要。</td></tr>
-    <tr><td>`0x4..0x7 LOADI/ADD/SUB/WRITEREG`</td><td>ALU 和寄存器演示</td><td>必须用于课程验收，但不必让真实曲子依赖它。</td></tr>
+    <tr><td>`0x4..0x7 LOADI/ADD/SUB/WRITEREG`</td><td>显式 ALU 指令和寄存器演示</td><td>用于把 ALU 算术路径可视化；真实播放则通过 WAIT 变速路径持续使用 ALU。</td></tr>
     <tr><td>`0xF END`</td><td>曲末 PC 清 0 或自动下一首</td><td>必须。</td></tr>
   </table>
   <h3>APU 寄存器映射</h3>
@@ -274,6 +274,12 @@
     <tr><td>12,14,15</td><td>Noise</td><td>`$400C,$400E,$400F`</td></tr>
     <tr><td>13</td><td>不用</td><td>`$400D` 真实未用，脚本丢弃</td></tr>
   </table>
+  <h3>ALU 与播放器的结合点：实时变速</h3>
+  <p>不要把 ALU 做成孤立小 demo。主线功能是：CPU 遇到 `WAIT imm` 时，不直接把 `imm` 装进 `wait_counter`，而是先让 ALU 计算有效等待时间。</p>
+  <pre>normal : effective_wait = imm
+slower : effective_wait = imm + tempo_delta
+faster : effective_wait = max(1, imm - tempo_delta)</pre>
+  <p>`tempo_delta` 由控制面板的快/慢按钮或 2-bit 档位选择产生，例如 0、2、4、8。这样真实 NSF 播放时，每一帧的 WAIT 都会经过 ALU；老师问 ALU 有什么用，可以直接演示“慢一点/快一点”按钮改变播放速度。R0-R3 的 demo ROM 保留，但它只是验证 ALU 加减的可视化辅助。</p>
 </section>
 
 <section id="roadmap">
@@ -282,9 +288,10 @@
     <li><strong>先做 Buzzer 压测小电路。</strong>不要等 CPU/APU 搭完才发现声音线程卡。做一个 `BuzzerStress` 子电路：计数器每 1、2、4、8、16、32 tick 改一次频率，分别测单 Buzzer 和 4 Buzzer。</li>
     <li><strong>做单声道 Pulse APU。</strong>手动用常量和按钮写 `$4000,$4002,$4003,$4015`，能让一个 Buzzer 发 A4 或音阶。</li>
     <li><strong>扩成 4 声道 APU。</strong>先不追求真实包络，只做 timer、volume、duty、enable，确保 4 个 Buzzer 能同时响。</li>
-    <li><strong>做最小 CPU。</strong>只实现 `WAIT/WRITE/END`，加载 `track00.txt` 或更短测试 ROM，能自动写 APU 出声。</li>
-    <li><strong>补 ALU。</strong>加入 R0-R3、`LOADI/ADD/SUB/WRITEREG`，用 demo ROM 演示 `100+50=150`、`100-50=50`。</li>
-    <li><strong>补控制面板。</strong>做 pause、stop、next、prev。多曲 MUX 只有在前面都稳后再搭。</li>
+    <li><strong>做最小 CPU。</strong>先实现 `WAIT/WRITE/END`，加载 `track00.txt` 或更短测试 ROM，能自动写 APU 出声。</li>
+    <li><strong>把 ALU 接入 WAIT。</strong>在 `WAIT` 装载计数器前加 `effective_wait = imm ± tempo_delta`，先用常量档位测试快/慢播放。</li>
+    <li><strong>补显式 ALU demo。</strong>加入 R0-R3、`LOADI/ADD/SUB/WRITEREG`，用 demo ROM 显示 `100+50=150`、`100-50=50`，证明同一套加减硬件可控。</li>
+    <li><strong>补控制面板。</strong>做 pause、stop、next、prev，以及 normal/fast/slow 变速档位。多曲 MUX 只有在前面都稳后再搭。</li>
     <li><strong>补计时和展示。</strong>MM:SS 和钢琴键可视化是加分项，最后做。</li>
   </ol>
 </section>
@@ -297,7 +304,7 @@
   </div>
   <pre>IF  : PC -> ROM -> instr[15:0]
 ID  : opcode = instr[15:12], 拆 imm/reg/val/Rd/Ra/Rb
-EX  : WAIT 计数 / ALU 加减 / reg_id 译码
+EX  : WAIT 调速 ALU / 显式 ALU 加减 / reg_id 译码
 MEM : WRITE 或 WRITEREG -> APU write bus
 WB  : PC 更新、寄存器写回</pre>
   <h3>推荐寄存器和控制信号</h3>
@@ -305,9 +312,11 @@ WB  : PC 更新、寄存器写回</pre>
     <tr><th>名字</th><th>位宽</th><th>说明</th></tr>
     <tr><td>`PC`</td><td>16</td><td>字地址，接当前曲目 ROM 地址。</td></tr>
     <tr><td>`instr`</td><td>16</td><td>ROM 输出，可直接进 splitter。</td></tr>
-    <tr><td>`wait_counter`</td><td>16</td><td>支持 WAIT 和 LWAIT。</td></tr>
+    <tr><td>`wait_counter`</td><td>16</td><td>装载 `effective_wait`，支持 WAIT 和 LWAIT。</td></tr>
     <tr><td>`wait_busy`</td><td>1</td><td>避免 WAIT 重装载。</td></tr>
-    <tr><td>`R0..R3`</td><td>8</td><td>ALU demo 和 WRITEREG 数据源。</td></tr>
+    <tr><td>`tempo_delta`</td><td>8 或 16</td><td>快/慢播放的步长，来自按钮或 DIP 档位。</td></tr>
+    <tr><td>`tempo_mode`</td><td>2</td><td>00 正常，01 加长 WAIT 变慢，10 缩短 WAIT 变快。</td></tr>
+    <tr><td>`R0..R3`</td><td>8</td><td>显式 ALU demo 和 WRITEREG 数据源。</td></tr>
     <tr><td>`apu_we`</td><td>1</td><td>仅 WRITE/WRITEREG 且非 wait stall 时为 1。</td></tr>
     <tr><td>`apu_reg`</td><td>4</td><td>来自 instr[11:8]。</td></tr>
     <tr><td>`apu_data`</td><td>8</td><td>WRITE 用 instr[7:0]，WRITEREG 用 R[Rs]。</td></tr>
@@ -316,6 +325,14 @@ WB  : PC 更新、寄存器写回</pre>
   <pre>v2.0 raw
 4100 4164 4232 5200 7900 f000</pre>
   <p class="small">示例含义按你当前编码微调：LOADI R0,100；LOADI R1,50；ADD R2,R0,R1；WRITEREG 某 reg,R2；END。若字段定义和现有表不一致，以本文件第 05 节 ISA 为准重新编码。</p>
+  <h3>WAIT 变速硬件接法</h3>
+  <ol>
+    <li>把 `WAIT imm12` 零扩展到 16-bit，作为 ALU 输入 A。</li>
+    <li>把 `tempo_delta` 零扩展到 16-bit，作为 ALU 输入 B。</li>
+    <li>`tempo_mode=00` 时旁路 ALU，直接装载 `imm`；`01` 时选择 `A+B`；`10` 时选择 `A-B`。</li>
+    <li>对快速档加保护：如果 `A <= B`，装载 1，避免 WAIT=0 导致播放过快或忙等逻辑边界不清。</li>
+    <li>把最终的 `effective_wait` 显示到一个 Hex Display，验收时按快/慢按钮能看到它变化。</li>
+  </ol>
 </section>
 
 <section id="apu">
@@ -349,7 +366,8 @@ WB  : PC 更新、寄存器写回</pre>
     <tr><td>脚本</td><td>`python script/encode.py script/gme_dump/logs/slot00_monitoring_t0.log tmp.txt --frame-cycles 32 --dedup`</td><td>无超预算警告；末字 `f000`。</td></tr>
     <tr><td>APU</td><td>手动写 Pulse A4</td><td>`timer=253` 时 Buzzer 约 A4；`reg9 bit0=0` 立刻静音。</td></tr>
     <tr><td>CPU</td><td>短 ROM 跑 WAIT/WRITE/END</td><td>PC 能停 N 拍、写 APU 一次、END 后回 0。</td></tr>
-    <tr><td>ALU</td><td>demo ROM</td><td>Hex Digit 显示 R2=150、R3=50 或同等加减结果。</td></tr>
+    <tr><td>ALU</td><td>WAIT 变速</td><td>同一首 `track00.txt` 在 normal/slow/fast 三档下节奏明显变化；Hex Display 可显示 `effective_wait`。</td></tr>
+    <tr><td>ALU</td><td>demo ROM</td><td>Hex Digit 显示 R2=150、R3=50 或同等加减结果，作为可视化证明。</td></tr>
     <tr><td>集成</td><td>加载 `track00.txt`</td><td>能听到可辨认节奏；暂停/停止不会继续响。</td></tr>
     <tr><td>集成</td><td>切到 `track01.txt` 和 `track11.txt`</td><td>16-bit PC 不回绕；最长曲可循环。</td></tr>
   </table>
@@ -363,14 +381,14 @@ WB  : PC 更新、寄存器写回</pre>
     <tr><td>D2-D3</td><td>4 声道 APU 寄存器堆和频率表</td><td>手动喂寄存器可听 4 声道。</td></tr>
     <tr><td>D4-D5</td><td>CPU `WAIT/WRITE/END`</td><td>短 ROM 自动出声。</td></tr>
     <tr><td>D6</td><td>真实 `track00.txt` 集成</td><td>至少 1 首真实 NSF 可听。</td></tr>
-    <tr><td>D7</td><td>ALU 和 demo ROM</td><td>R0-R3 可视化，加减可演示。</td></tr>
-    <tr><td>D8</td><td>控制面板</td><td>play/pause/stop/next/prev。</td></tr>
+    <tr><td>D7</td><td>ALU 变速播放 + demo ROM</td><td>真实曲目可快/慢播放；R0-R3 可视化，加减可演示。</td></tr>
+    <tr><td>D8</td><td>控制面板</td><td>play/pause/stop/next/prev/tempo。</td></tr>
     <tr><td>D9</td><td>多曲和计时</td><td>至少 3 首可切换；MM:SS 可选。</td></tr>
     <tr><td>D10</td><td>备份、答辩脚本、录屏</td><td>PPT/演示顺序/故障备用 ROM。</td></tr>
   </table>
   <div class="callout review">
     <h3><span class="badge violet">CUT</span>时间不够时这样砍</h3>
-    <p>第一刀砍可视化钢琴键；第二刀砍 MM:SS 计时；第三刀砍 16 首全量切换，保留 3 首；第四刀从 4 声道降到 2 pulse + triangle。不要砍五段 CPU、ALU demo、WAIT、WRITE、至少一首真实曲。</p>
+    <p>第一刀砍可视化钢琴键；第二刀砍 MM:SS 计时；第三刀砍 16 首全量切换，保留 3 首；第四刀从 4 声道降到 2 pulse + triangle。不要砍五段 CPU、ALU 变速播放、WAIT、WRITE、至少一首真实曲。R0-R3 demo 可以缩短，但不要完全删除。</p>
   </div>
 </section>
 
@@ -379,7 +397,8 @@ WB  : PC 更新、寄存器写回</pre>
   <ol>
     <li>先讲降维：NSF 本质是 NES 音乐程序，离线播放器跑它并记录 APU 寄存器写入，Logisim 只回放寄存器流。</li>
     <li>再讲 CPU：16-bit 定长 ISA，五段 IF/ID/EX/MEM/WB，WAIT 是多周期状态，WRITE 是 MMIO。</li>
-    <li>展示 ALU：现场跑 demo ROM，让 R0-R3 的 Hex Digit 变化，说明 ADD/SUB 是真实硬件路径。</li>
+    <li>展示 ALU 主功能：播放真实 `track00.txt`，切 normal/slow/fast，说明 WAIT 装载前会经 ALU 计算 `imm ± tempo_delta`，所以真实音乐播放时 ALU 持续参与节奏控制。</li>
+    <li>展示 ALU 旁证：现场跑 demo ROM，让 R0-R3 的 Hex Digit 变化，说明 ADD/SUB 是同一类可控算术路径。</li>
     <li>展示 APU：Pulse/Triangle/Noise 分别来自 NESdev 公式和查表 ROM，Buzzer 负责最终发声。</li>
     <li>主动说明取舍：DMC、真实包络、真实长度计数器、真实混音暂不做；这是课程范围内的工程简化，不是没想清楚。</li>
   </ol>

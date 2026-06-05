@@ -760,7 +760,7 @@
     <span>Revised · 2026.05.16</span>
   </div>
   <h1>在 Logisim 里搭一个<br><span class="accent">能放 NES 音乐</span>的硬件播放器
-    <span class="doc-version">V6 · NSFPlay 直采</span>
+    <span class="doc-version">V6 · GME 直采修正版</span>
   </h1>
   <p class="subtitle">
     用纯数字逻辑电路实现一个 8-bit 音乐播放器：自研五段 CPU + 基于 Logisim Buzzer 的 APU
@@ -779,6 +779,7 @@
     <li><strong>音高不缩放</strong>：第 5 节“频率寄存器值 × 时间缩放系数”仅适用于自搓振荡器；本方案用 Buzzer，其 Frequency 引脚按真实 Hz 发声，频率表直接输出真实 NES Hz。<em>只有节奏(WAIT)需缩放</em>，且采用“每帧固定周期”使节奏均匀。</li>
     <li><strong>hook 目标</strong>：第 5 节写 NSFPlay，实际采用 <strong>game-music-emu (GME)</strong>（单一 hook 点 <code>Nes_Apu::write_register</code> + 自带时间戳，构建更顺）。</li>
     <li><strong>“五段 CPU”定义已确认</strong>：老师明确<em>不要求流水线</em>，做到 IF/ID/EX/MEM/WB 五个阶段即可（单周期五段满足）。</li>
+    <li><strong>ALU 与播放器结合</strong>：不要只做孤立加减 demo。主功能改为 <strong>WAIT 变速播放</strong>：真实曲目执行 WAIT 时经 ALU 计算 <code>effective_wait = imm ± tempo_delta</code>，实现 normal / slow / fast 播放。R0–R3 demo 仅作为可视化证明。</li>
   </ol>
 </div>
 
@@ -869,7 +870,7 @@
 
       <rect x="60" y="185" width="200" height="80" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
       <text x="160" y="210" class="lbl" text-anchor="middle" style="fill:#2c6770; font-weight:600;">Python 脚本</text>
-      <text x="160" y="228" class="lbl-dim" text-anchor="middle">NSFPlay hook 提取</text>
+      <text x="160" y="228" class="lbl-dim" text-anchor="middle">GME hook 提取</text>
       <text x="160" y="246" class="lbl-dim" text-anchor="middle">提取寄存器写入序列</text>
 
       <line x1="160" y1="270" x2="160" y2="305" stroke="#2c6770" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
@@ -1187,7 +1188,7 @@
   <p>用 Python 写，在电脑上运行，不进 Logisim。负责把 <code>.nsf</code> 文件转成 ROM 映像。</p>
 
   <h3><span class="num">▸</span>工作流程（两阶段）</h3>
-  <p>分两段：<strong>阶段一</strong>改 NSFPlay 源码 hook 出寄存器写入日志（C++）；
+  <p>分两段：<strong>阶段一</strong>改 game-music-emu (GME) 源码 hook 出寄存器写入日志（C++）；
   <strong>阶段二</strong>用 Python 把日志编码成 ROM 映像。</p>
   <div class="diagram">
     <div class="diagram-label">FIG. 5.1 · TOOLCHAIN</div>
@@ -1203,7 +1204,7 @@
 
       <!-- stage 1 box -->
       <rect x="20" y="30" width="490" height="180" fill="none" stroke="#5e3677" stroke-dasharray="4 4" stroke-width="1" opacity="0.6"/>
-      <text x="30" y="50" class="lbl-accent" style="fill:#5e3677;">阶段一 · 改 NSFPlay（C++，一次性）</text>
+      <text x="30" y="50" class="lbl-accent" style="fill:#5e3677;">阶段一 · 改 GME（C++，一次性）</text>
 
       <rect x="40" y="80" width="120" height="70" fill="#fff" stroke="#2c6770" stroke-width="1.5"/>
       <text x="100" y="108" class="lbl" text-anchor="middle" style="font-weight:600;">.nsf 文件</text>
@@ -1212,7 +1213,7 @@
       <line x1="160" y1="115" x2="200" y2="115" stroke="#2c6770" stroke-width="1.5" marker-end="url(#ar3)"/>
 
       <rect x="200" y="75" width="150" height="80" fill="#fff" stroke="#5e3677" stroke-width="1.5"/>
-      <text x="275" y="100" class="lbl" text-anchor="middle" style="fill:#5e3677; font-weight:600;">NSFPlay</text>
+      <text x="275" y="100" class="lbl" text-anchor="middle" style="fill:#5e3677; font-weight:600;">GME</text>
       <text x="275" y="118" class="lbl-dim" text-anchor="middle" style="font-size:9px;">(已克隆，加 log)</text>
       <text x="275" y="134" class="lbl-dim" text-anchor="middle" style="font-size:9px;">hook APU::Write</text>
 
@@ -1232,7 +1233,7 @@
       <rect x="555" y="75" width="170" height="80" fill="#fff" stroke="#a8410d" stroke-width="1.5"/>
       <text x="640" y="100" class="lbl" text-anchor="middle" style="font-weight:600;">Python 转换</text>
       <text x="640" y="118" class="lbl-dim" text-anchor="middle" style="font-size:9px;">解析 log + 编码</text>
-      <text x="640" y="132" class="lbl-dim" text-anchor="middle" style="font-size:9px;">时钟/频率缩放 + DMC 跳过</text>
+      <text x="640" y="132" class="lbl-dim" text-anchor="middle" style="font-size:9px;">固定帧周期 + DMC 跳过</text>
 
       <line x1="725" y1="115" x2="765" y2="115" stroke="#a8410d" stroke-width="1.5" marker-end="url(#ar3o)"/>
 
@@ -1243,20 +1244,20 @@
 
       <text x="500" y="195" class="lbl-dim" text-anchor="middle" style="font-size:10px;">关键：寄存器序列来自真实 APU 模拟器（经验证），不用自己实现 6502，没有隐藏 bug</text>
     </svg>
-    <div class="diagram-caption">FIG 5.1 · 直接 hook NSFPlay 的 APU 写寄存器函数——比绕 VGM 少两次格式转换</div>
+    <div class="diagram-caption">FIG 5.1 · 直接 hook GME 的 APU 写寄存器函数——比绕 VGM 少两次格式转换</div>
   </div>
 
   <div class="card info">
     <div class="card-title">为什么不绕 VGM？</div>
     <p>
       早期方案想走 <code>NSF → VGM → ROM</code>，但 VGM 是<em>另一种文件格式</em>，要先转 VGM（需额外工具）再解析 VGM（再写代码），<strong>两次转换两个格式</strong>。<br>
-      而 NSFPlay 内部本来就在做"运行 6502 → 写 APU 寄存器"这件事——<strong>直接在它写寄存器的函数加一行 log</strong>，一步拿到我们要的序列。既然已经克隆了 NSFPlay，这是最短路径。
+      而 GME 内部本来就在做"运行 6502 → 写 APU 寄存器"这件事——<strong>直接在 <code>Nes_Apu::write_register</code> 加一行 hook</strong>，一步拿到我们要的序列。相比 NSFPlay，GME 写寄存器入口更集中且自带时间参数，这是当前实现采用的最短路径。
     </p>
   </div>
 
   <h3><span class="num">▸</span>自定义指令格式</h3>
   <p>分两类：<strong>回放类</strong>（等待 / 写寄存器 / 结束）和<strong>运算类</strong>（加载 / 加 / 减 / 寄存器写）。
-  运算类指令让 CPU 的 ALU 真正参与计算，主要用来实现颤音、音量渐变等效果。</p>
+  运算类指令让 CPU 的 ALU 可视化；真实播放器主功能则让 ALU 接入 <code>WAIT</code> 装载路径，做 normal / slow / fast 变速播放。</p>
   <table>
     <thead>
       <tr><th>Opcode</th><th>格式（字节）</th><th>语义</th></tr>
@@ -1281,24 +1282,21 @@
 03 04 00      <span class="cmt"># LWAIT 1024 个周期（约 1/4 拍）</span>
 ...
 
-<span class="cmt"># ROM 示例 2：颤音效果（用 ALU 加减）</span>
-04 00 AA      <span class="cmt"># LOADI R0 = 0xAA（基频）</span>
-04 01 01      <span class="cmt"># LOADI R1 = 1（颤音步长）</span>
-07 02 00      <span class="cmt"># WRITEREG Pulse1_freq_lo = R0</span>
-00 32         <span class="cmt"># WAIT 50</span>
-05 00 00 01   <span class="cmt"># ADD R0 = R0 + R1（频率 +1）</span>
-07 02 00      <span class="cmt"># WRITEREG Pulse1_freq_lo = R0</span>
-00 32         <span class="cmt"># WAIT 50</span>
-06 00 00 01   <span class="cmt"># SUB R0 = R0 - R1（频率回落）</span>
+<span class="cmt"># ROM 示例 2：ALU 可视化 demo（辅助验收）</span>
+04 00 64      <span class="cmt"># LOADI R0 = 100</span>
+04 01 32      <span class="cmt"># LOADI R1 = 50</span>
+05 02 00 01   <span class="cmt"># ADD R2 = R0 + R1 → 150</span>
+06 03 00 01   <span class="cmt"># SUB R3 = R0 - R1 → 50</span>
 ...
 FF            <span class="cmt"># END</span></pre>
 
   <div class="card info">
-    <div class="card-title">脚本怎么用上 ADD/SUB？</div>
+    <div class="card-title">真实播放器怎么用上 ALU？</div>
     <p>
-      B 不需要复杂分析。最简单的策略：<strong>检测连续两次写同一寄存器、值差为 ±1/±2 的模式</strong>，
-      就改用 LOADI + ADD/SUB 来生成（典型的颤音、音量渐变）。其余情况仍用直接 WRITE。<br>
-      只要生成的 ROM 里<em>能找到 ADD/SUB 指令</em>、跑起来 ALU 确实在算，就达到了"CPU 有运算能力"的要求。
+      不建议再让脚本识别颤音/渐变并生成 ADD/SUB，这会增加离线编码复杂度。更稳的结合点在 CPU 硬件：
+      每次执行 <code>WAIT imm</code> 时，先由 ALU 计算 <code>effective_wait = imm ± tempo_delta</code>，
+      再装入等待计数器。控制面板给出 normal / slow / fast 档位，真实 NSF 曲目播放时就能直接听到速度变化。<br>
+      <code>LOADI/ADD/SUB</code> 的 demo ROM 保留，用来在 Hex Display 上直观看到 R0–R3 的运算结果。
     </p>
   </div>
 
@@ -1328,7 +1326,7 @@ FF            <span class="cmt"># END</span></pre>
 ├── data/
 │   └── raw/                  <span class="cmt"># 原始 .nsf 示范曲</span>
 ├── script/                   <span class="cmt"># B 组：转换脚本</span>
-│   ├── nsfplay_patch/        <span class="cmt"># 给 NSFPlay 的 log hook 补丁</span>
+│   ├── gme_dump/             <span class="cmt"># 给 GME 的 log hook 与 dumper</span>
 │   ├── parse_log.py          <span class="cmt"># 解析 reg log</span>
 │   ├── encode.py             <span class="cmt"># 编码成自定义指令 + 缩放</span>
 │   └── out/                  <span class="cmt"># 生成的 ROM .txt</span>
@@ -1586,9 +1584,10 @@ FF            <span class="cmt"># END</span></pre>
     <p>
       为了让 CPU 具备<strong>基本的加减运算能力</strong>（而不只是搬数据），我们加了：<br>
       <strong>① 4 个通用寄存器 R0–R3</strong>（各 8-bit，用 Logisim Register 组件）；<br>
-      <strong>② 一个真正的 ALU</strong>，支持 <code>ADD</code> / <code>SUB</code> 两种算术运算，外加内部用的 <code>DEC</code>（递减）和零检测。<br>
-      指令 <code>LOADI</code> / <code>ADD</code> / <code>SUB</code> / <code>WRITEREG</code> 配合这套硬件，能实现颤音、音量渐变等真实音乐效果——
-      EX 段的 ALU 在这些指令下<em>真的在做加减</em>，不是摆设。
+      <strong>② 一个真正的 ALU</strong>，支持 <code>ADD</code> / <code>SUB</code> 两种算术运算，外加 WAIT 计数所需的递减和零检测。<br>
+      主功能不是孤立 demo，而是接入播放器节奏：<code>WAIT imm</code> 装载前，ALU 根据控制面板计算
+      <code>effective_wait = imm + tempo_delta</code>（慢放）或 <code>imm - tempo_delta</code>（快放，下限钳到 1）。
+      所以真实音乐播放时 ALU 持续参与节奏控制；<code>LOADI/ADD/SUB/WRITEREG</code> 则用于可视化证明。
     </p>
   </div>
 
@@ -1636,19 +1635,21 @@ FF            <span class="cmt"># END</span></pre>
       <text x="750" y="120" class="lbl" text-anchor="middle" style="fill:#4d6b2a; font-weight:600;">result (8-bit)</text>
       <text x="750" y="138" class="lbl-dim" text-anchor="middle" style="font-size:9px;">→ 写回 R[Rd]</text>
 
-      <text x="500" y="220" class="lbl-dim" text-anchor="middle" style="font-size:10px;">op=00: ADD ｜ op=01: SUB ｜（内部另有 12-bit 减法器给 WaitCounter 递减，独立于此）</text>
+      <text x="500" y="220" class="lbl-dim" text-anchor="middle" style="font-size:10px;">op=00: ADD ｜ op=01: SUB ｜WAIT 调速也走 imm ± tempo_delta 的加减路径</text>
     </svg>
     <div class="diagram-caption">FIG 6.3 · ALU：一个加法器 + 一个减法器 + 一个结果选择 MUX。极简但功能完整。</div>
   </div>
 
   <div class="card">
-    <div class="card-title">WAIT 指令如何"占用多个周期"</div>
+    <div class="card-title">WAIT 指令如何"占用多个周期"并接入 ALU 变速</div>
     <p>
       <strong>问题</strong>：WAIT 指令需要让 CPU 停在原地等 N 个周期，怎么实现？<br>
-      <strong>方案</strong>：EX 阶段维护一个 12-bit"等待计数器"寄存器。
-      WAIT 指令到 EX 时把计数器装载为 N，之后每个时钟 -1，直到归零才发出 <code>stall=0</code>。
+      <strong>方案</strong>：EX 阶段维护一个 16-bit"等待计数器"寄存器。
+      WAIT 指令到 EX 时不直接装载 N，而是先经 ALU 得到 <code>effective_wait</code>：
+      normal = N，slow = N + <code>tempo_delta</code>，fast = max(1, N - <code>tempo_delta</code>)。
+      之后每个时钟 -1，直到归零才发出 <code>stall=0</code>。
       WB 阶段看到 <code>stall=1</code> 就<em>不更新 PC</em>，IF 阶段于是反复取同一条 WAIT 指令——
-      但因为计数器在递减，实际上是在"原地走时间"。
+      但因为计数器在递减，实际上是在"原地走时间"。这就是 ALU 和真实播放器功能的结合点。
     </p>
   </div>
 
@@ -1672,12 +1673,13 @@ FF            <span class="cmt"># END</span></pre>
   </div>
 
   <div class="card info">
-    <div class="card-title">验收演示建议：ALU 可视化</div>
+    <div class="card-title">验收演示建议：先展示变速，再展示寄存器</div>
     <p>
-      在主电路上放 4 个 Hex Digit Display 显示 R0–R3 的实时值。
-      验收时如果老师问"ALU 能不能算"，可以<strong>当场改 ROM</strong> 写一段
-      <code>LOADI R0,100 / LOADI R1,200 / ADD R2,R0,R1</code>，
-      让 R2 显示出 300（注意 8-bit 溢出，实际显示 44，可改成不溢出的数）——现场演示运算最有说服力。
+      第一层展示：真实曲目播放时按 normal / slow / fast，节奏改变，并在 Hex Display 上显示
+      <code>effective_wait</code>。这证明 ALU 正在服务播放器功能。<br>
+      第二层展示：在主电路上放 4 个 Hex Digit Display 显示 R0–R3 的实时值，跑一段
+      <code>LOADI R0,100 / LOADI R1,50 / ADD R2,R0,R1 / SUB R3,R0,R1</code>，
+      让 R2=150、R3=50，证明 ADD/SUB 也能被显式指令控制。
     </p>
   </div>
 </section>
@@ -2006,13 +2008,13 @@ FF            <span class="cmt"># END</span></pre>
         负责 NSF → ROM 映像的离线工具链。<em>纯软件工作</em>，前期可独立推进，不依赖 Logisim 部分。
       </p>
       <ul>
-        <li>定位 NSFPlay 的 APU 写寄存器函数，加 log hook</li>
-        <li>编译 NSFPlay，跑示范曲 dump 出 reg log</li>
+        <li>定位 GME 的 <code>Nes_Apu::write_register</code>，加 dump hook</li>
+        <li>编译 GME dumper，跑示范曲 dump 出 reg log</li>
         <li>用 Python 解析 reg log</li>
-        <li>实现时钟/频率缩放算法（关键难点）</li>
+        <li>实现固定帧周期编码（<code>--frame-cycles</code>，节奏等时）</li>
         <li>检测 DMC 写入并跳过</li>
         <li>编码成自定义指令格式输出 <code>.txt</code></li>
-        <li><strong>识别颤音/渐变模式，生成 ADD/SUB 指令</strong>（让 ALU 用上）</li>
+        <li>提供测试 ROM / 文档，配合 C 组验证 WAIT 变速播放</li>
         <li>批量处理多首曲库 + 检测循环点</li>
         <li>预留 MIDI 音符号字段（可视化用）</li>
       </ul>
@@ -2028,11 +2030,11 @@ FF            <span class="cmt"># END</span></pre>
         <li>设计自定义指令集（5 条回放 + 4 条运算 + END）</li>
         <li>实现 IF/ID/EX/MEM/WB 五个阶段（单周期）</li>
         <li>WAIT 指令的 stall 机制（关键难点）</li>
-        <li><strong>ALU（ADD/SUB）+ 4 个通用寄存器 R0-R3</strong></li>
+        <li><strong>ALU（ADD/SUB）+ WAIT 变速路径 + 4 个通用寄存器 R0-R3</strong></li>
         <li>MMIO 地址译码（CPU→APU 接口）</li>
         <li>PC 控制（顺序 +1 / 复位 / 保持）</li>
         <li>END 信号 + 切歌响应</li>
-        <li>ALU 可视化（R0-R3 接 Hex Display 供验收演示）</li>
+        <li>ALU 可视化（effective_wait + R0-R3 接 Hex Display 供验收演示）</li>
       </ul>
     </div>
 
@@ -2071,7 +2073,7 @@ FF            <span class="cmt"># END</span></pre>
     <p>
       <strong>所有人</strong>：通读 nesdev wiki 的 APU 章节<br>
       <strong>A</strong>：起草接口文档第一版，开 git 仓库<br>
-      <strong>B</strong>：搭 Python 环境，跑通 NSFPlay 导出日志<br>
+      <strong>B</strong>：搭 Python 环境，跑通 GME dumper 导出日志<br>
       <strong>C</strong>：在 Logisim 里搭一个最简单的"PC + ROM + 译码"看效果<br>
       <strong>D</strong>：在 Logisim 里玩 Buzzer 组件，测试不同 waveform 属性下的声音<br>
       <em>一周后碰一次，对齐接口、调整方案。</em>
@@ -2215,7 +2217,7 @@ FF            <span class="cmt"># END</span></pre>
           <ul>
             <li><strong>全员</strong>：通读 nesdev wiki APU 章节、Logisim Evolution 用户手册</li>
             <li><strong>A</strong>：建 git 仓库，起草接口文档（指令编码、MMIO 地址表、寄存器位定义）</li>
-            <li><strong>B</strong>：定位 NSFPlay 的 APU 写寄存器函数，加 log，编译跑通，能从一个 .nsf dump 出寄存器写入日志</li>
+            <li><strong>B</strong>：定位 GME 的 APU 写寄存器函数，加 log，编译跑通，能从一个 .nsf dump 出寄存器写入日志</li>
             <li><strong>C</strong>：在 Logisim 里搭"PC + ROM"原型（PC 自动递增，从 ROM 取出指令字显示在 LED）</li>
             <li><strong>D</strong>：在 Logisim 里手动调 Buzzer 属性，测试 square / triangle / noise 三种波形听感</li>
           </ul>
@@ -2245,8 +2247,8 @@ FF            <span class="cmt"># END</span></pre>
         <div class="milestone-section">
           <div class="milestone-section-title">10 天内完成</div>
           <ul>
-            <li><strong>B</strong>：脚本能输出符合指令格式的 ROM 映像 .txt；时钟/频率缩放算法跑通；DMC 跳过逻辑完成；颤音/渐变模式能生成 ADD/SUB</li>
-            <li><strong>C</strong>：CPU 五段全部完成（IF/ID/EX/MEM/WB）；WAIT 指令 stall 机制正确；<strong>ALU 加减 + 4 个通用寄存器完成</strong>；END 信号能输出</li>
+            <li><strong>B</strong>：脚本能输出符合 16-bit 指令格式的 ROM 映像 .txt；固定帧周期算法跑通；DMC 跳过逻辑完成；提供调速测试 ROM / 说明</li>
+            <li><strong>C</strong>：CPU 五段全部完成（IF/ID/EX/MEM/WB）；WAIT 指令 stall 机制正确；<strong>ALU 变速路径 + 显式 ADD/SUB + 4 个通用寄存器完成</strong>；END 信号能输出</li>
             <li><strong>D</strong>：4 个 APU 通道全部独立可发声（手动写寄存器值能听到对应通道响）；$4015 通道使能正确</li>
             <li><strong>A</strong>：跟进各组进度，发现接口偏差时及时召集对齐</li>
           </ul>
@@ -2256,7 +2258,7 @@ FF            <span class="cmt"># END</span></pre>
           <div class="demo-criterion">
             <strong>能展示：</strong>① B 把一首真实 NSF 转成 ROM 映像（即便没法运行，文件本身格式正确）；
             ② C 用手工写的测试 ROM 跑 CPU，PC 按预期递增、WAIT 能正确停 N 个周期、END 触发复位；
-            <strong>跑一段 LOADI + ADD/SUB，R0-R3 显示正确的运算结果</strong>；
+            <strong>同一段 WAIT 测试 ROM 在 normal/slow/fast 下等待时间不同，并跑一段 LOADI + ADD/SUB，R0-R3 显示正确的运算结果</strong>；
             ③ D 手动写 4 个通道的寄存器，能<em>同时</em>听到 4 个 Buzzer 发声（音高音量各自独立）；
             ④ 全员确认接口对齐没有偏差。
           </div>
@@ -2266,7 +2268,7 @@ FF            <span class="cmt"># END</span></pre>
           <ul>
             <li>这是最长的一个里程碑（10 天），中间容易松懈。<strong>5/27 设一个 mini-check</strong>：各组同步进度，未达 50% 的紧急对齐</li>
             <li>如果 C 卡在 WAIT 指令实现，A 立即介入帮忙——这是验收最重要的部分</li>
-            <li>ALU 加减不复杂（一个加法器 + 减法器 + MUX），但<strong>必须 M2 内完成</strong>，不要拖到联调期改 CPU 接口</li>
+            <li>ALU 变速路径不复杂（一个加法器 + 减法器 + MUX + 下限钳位），但<strong>必须 M2 内完成</strong>，不要拖到联调期改 CPU 接口</li>
           </ul>
         </div>
       </div>
@@ -2288,7 +2290,7 @@ FF            <span class="cmt"># END</span></pre>
             <li>把 CPU 和 APU 通过 MMIO 接起来（A 主导，C 和 D 配合）</li>
             <li>用 B 生成的测试曲（先用<em>手写音阶</em>，再用真实 NSF）跑通完整链路</li>
             <li>A 完成控制面板：播放/暂停/停止/上下首按钮 + MM:SS 计时器 + 自动切歌</li>
-            <li>调整时钟缩放参数，找到"速度和音高都能接受"的折中点</li>
+            <li>调试全局 tick 与 ALU 变速档位，找到 normal/slow/fast 都能听清的参数</li>
             <li>主电路里建空的 Display 子电路占位（接口预留好）</li>
           </ul>
         </div>
@@ -2296,7 +2298,7 @@ FF            <span class="cmt"># END</span></pre>
           <div class="milestone-section-title">M3 Demo 标准（6/8 晚）</div>
           <div class="demo-criterion">
             <strong>能展示：</strong>① 整个系统跑起来——点"播放"按钮，Logisim 输出真实可识别的 NES 音乐；
-            ② 演示暂停/继续/停止/上下首功能；
+            ② 演示暂停/继续/停止/上下首/normal-slow-fast 变速功能；
             ③ 计时器 MM:SS 正常走动，到上限自动切下一首；
             ④ 至少能成功播放 <strong>3 首不同的 NSF 曲目</strong>（证明不是"针对单首歌调出来的"）。
           </div>
@@ -2343,8 +2345,8 @@ FF            <span class="cmt"># END</span></pre>
         <div class="milestone-section">
           <div class="milestone-section-title">M4 Demo 标准（6/15 验收）</div>
           <div class="demo-criterion">
-            <strong>验收当天演示：</strong>① 五段 CPU 数据通路讲解清晰，能回答"WAIT 指令怎么 stall 的"、"ALU 支持哪些运算"；
-            ② <strong>现场改 ROM 演示 ALU 加减</strong>（R0-R3 实时显示）；
+            <strong>验收当天演示：</strong>① 五段 CPU 数据通路讲解清晰，能回答"WAIT 指令怎么 stall 的"、"ALU 如何参与 WAIT 变速"；
+            ② <strong>真实曲目 normal/slow/fast 变速 + 现场 ROM 演示 ALU 加减</strong>（effective_wait 与 R0-R3 实时显示）；
             ③ 演示 ≥ 5 首不同 NSF 音乐播放；④ 控制面板所有功能正常；
             ⑤ 能解释为什么砍 DMC、为什么 Triangle 用平滑波形——展示"<em>做了工程取舍</em>"而不是"做不出来"。
           </div>
@@ -2467,7 +2469,7 @@ FF            <span class="cmt"># END</span></pre>
     <a class="ref-card" href="https://github.com/libgme/game-music-emu" target="_blank" rel="noopener">
       <div class="ref-tag">备选 hook 目标</div>
       <div class="ref-title">game-music-emu (libgme)</div>
-      <div class="ref-desc">已克隆在 <code>ref/game-music-emu/</code>。blargg 的库，代码更小更好编译。<code>Nes_Apu::write_register</code> 是统一写入入口。NSFPlay 编译难时用它。</div>
+      <div class="ref-desc">已克隆在 <code>ref/game-music-emu/</code>。blargg 的库，代码更小更好编译。<code>Nes_Apu::write_register</code> 是统一写入入口，本项目实际采用它作为 hook 目标。</div>
       <div class="ref-url">github.com/libgme/game-music-emu</div>
     </a>
     <a class="ref-card" href="https://mbaillif.github.io/Logisim-evolution-documentation/en/html/libs/mem/rom.html" target="_blank" rel="noopener">
@@ -2608,7 +2610,7 @@ FF            <span class="cmt"># END</span></pre>
 
 <footer>
   <span>2A03 Player · Logisim Build</span>
-  <span>Project Brief · v6 · NSFPlay 直采</span>
+  <span>Project Brief · v6 · GME 直采修正版</span>
   <span>Doc generated · 2026.05.16</span>
 </footer>
 
