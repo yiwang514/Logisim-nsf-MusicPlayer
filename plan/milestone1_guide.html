@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>里程碑 1 · 手把手施工指引 — 项目骨架 + 让 Buzzer 唱出第一个音</title>
+<style>
+  :root{
+    --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
+    --line:rgba(80,60,40,.14); --text:#2d2520; --dim:#6a5a4c; --mute:#9a8a78;
+    --accent:#a8410d; --cyan:#2c6770; --red:#8b2820; --green:#4d6b2a; --purple:#5e3677;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+       font-family:"Segoe UI","Noto Sans SC",system-ui,sans-serif;font-size:15px;line-height:1.78;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 40px 120px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:22px;margin-bottom:10px}
+  h1{font-size:29px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  h1 .sub{display:block;font-size:15px;color:var(--dim);font-weight:400;margin-top:8px}
+  .meta{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--mute);
+        letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:21px;margin:46px 0 12px;padding-top:10px;border-top:1px solid var(--line);
+     color:var(--accent)}
+  h2 .n{font-family:"JetBrains Mono",monospace;font-size:13px;color:#fff;background:var(--accent);
+        padding:2px 9px;border-radius:4px;margin-right:10px}
+  h3{font-size:17px;margin:24px 0 8px}
+  p{margin:9px 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.85em;background:var(--deep);
+       padding:1px 6px;border-radius:3px;color:var(--accent)}
+  strong{color:var(--accent)} em{color:var(--cyan);font-style:normal;font-weight:600}
+  ul,ol{margin:9px 0 14px 22px} li{margin-bottom:6px}
+  kbd{font-family:"JetBrains Mono",monospace;font-size:.8em;background:#fff;border:1px solid var(--line);
+      border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--text)}
+  .path{font-family:"JetBrains Mono",monospace;font-size:.85em;color:var(--purple);font-weight:600}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  pre{background:#fffdf8;border:1px solid var(--line);border-left:3px solid var(--cyan);
+      padding:14px 18px;margin:14px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;
+      line-height:1.6;overflow-x:auto;border-radius:0 6px 6px 0;color:var(--text)}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+       padding:13px 19px;margin:14px 0;border-radius:0 6px 6px 0}
+  .box.warn{border-left-color:var(--red);background:rgba(139,40,32,.03)}
+  .box.good{border-left-color:var(--green);background:rgba(77,107,42,.045)}
+  .box.tip{border-left-color:var(--purple);background:rgba(94,54,119,.04)}
+  .box .t{font-weight:700;margin-bottom:5px;color:var(--cyan)}
+  .box.warn .t{color:var(--red)} .box.good .t{color:var(--green)} .box.tip .t{color:var(--purple)}
+  /* step card */
+  .step{display:grid;grid-template-columns:42px 1fr;gap:16px;margin:16px 0;align-items:start}
+  .step .num{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
+             display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;
+             font-weight:600;font-size:14px;flex-shrink:0;margin-top:2px}
+  .step .body{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 18px}
+  .step .body h4{font-size:15px;margin:0 0 4px;color:var(--text)}
+  .step .body p{margin:5px 0}
+  .tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10px;padding:2px 8px;
+       border-radius:3px;color:#fff;letter-spacing:.04em;vertical-align:middle}
+  .tag.do{background:var(--accent)} .tag.ok{background:var(--green)} .tag.q{background:var(--purple)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 22px;margin:18px 0}
+  .toc ol{margin:0;list-style:none;columns:2;column-gap:30px}
+  .toc a{color:var(--text);text-decoration:none} .toc a:hover{color:var(--accent)}
+  .toc .n{color:var(--accent);font-family:"JetBrains Mono",monospace;margin-right:7px}
+  .chk{list-style:none;margin-left:0}
+  .chk li{padding-left:30px;position:relative;margin-bottom:9px}
+  .chk li:before{content:"☐";position:absolute;left:4px;color:var(--accent);font-size:18px;top:-2px}
+  footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--line);color:var(--mute);
+         font-family:"JetBrains Mono",monospace;font-size:11px}
+  .legend span{display:inline-block;margin-right:16px;font-size:12px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="meta">Milestone 1 · 手把手 · 单人单刷 · Logisim Evolution v4.1.0</div>
+  <h1>里程碑 1：搭起项目骨架，让 Buzzer 唱出第一个音
+    <span class="sub">本文只覆盖第一个里程碑——“建几个电路、用哪些部件、每根线接哪”。做完你会得到：一个能压测声音的电路 + 一个能用频率表弹出 A4 音阶的单通道。后续里程碑另开文档，避免信息过载。</span>
+  </h1>
+</header>
+
+<div class="box tip">
+  <div class="t">读这份文档前你只需要知道三件事</div>
+  <ul style="margin-bottom:0">
+    <li>所有要 load 进 Logisim 的现成资产都在 <span class="path">script/out/</span>（脚本已生成好，不用你算）。</li>
+    <li>本里程碑<strong>完全不碰 CPU</strong>。我们先把“声音出口”这条链路点亮、并验证它扛不扛得住真实音乐的频率变化。</li>
+    <li>每一步都给了精确的<em>菜单路径</em>、<em>属性数值</em>、<em>连线关系</em>。照着做即可，不需要你懂 Logisim。</li>
+  </ul>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><span class="n">0</span><a href="#s0">先回答：建几个 .circ？用哪些部件？</a></li>
+    <li><span class="n">1</span><a href="#s1">Logisim 基本操作速成（脚趾头级）</a></li>
+    <li><span class="n">2</span><a href="#s2">部件速查表（去哪个库找、怎么设）</a></li>
+    <li><span class="n">3</span><a href="#s3">任务 A · BuzzerStress 声音压测</a></li>
+    <li><span class="n">4</span><a href="#s4">任务 B · PulseOneShot 单通道出 A4</a></li>
+    <li><span class="n">5</span><a href="#s5">里程碑 1 验收清单</a></li>
+    <li><span class="n">6</span><a href="#s6">下一里程碑预告（一句话）</a></li>
+  </ol>
+</div>
+
+<!-- ===================== 0 ===================== -->
+<h2 id="s0"><span class="n">0</span>先回答你的问题：建几个 .circ？用哪些部件？</h2>
+
+<h3>结论：<strong>三个</strong> .circ，一人一个；本里程碑在 <code>apu.circ</code> 里干活</h3>
+<p>你既然还要带队友过答辩，<em>多 .circ 正好</em>——<strong>一人守一个文件、答辩各讲自己那块</strong>，互不踩脚。按计划书分工拆三个文件：</p>
+<table>
+  <tr><th>文件</th><th>负责人</th><th>里面装什么</th></tr>
+  <tr><td><code>top.circ</code></td><td>A · 组长</td><td><code>main</code> 顶层 + 控制面板 + 计时器；把 cpu/apu 当“库”加载进来接线</td></tr>
+  <tr><td><code>cpu.circ</code></td><td>C · CPU</td><td>CPU 五段 + ALU + RegisterFile（R0–R3）</td></tr>
+  <tr><td><code>apu.circ</code></td><td>D · APU</td><td>4 通道 + 频率换算 + $4015 使能 + 4 Buzzer；<strong>本里程碑从这里起步</strong></td></tr>
+</table>
+<p>三个文件靠 Logisim 的“库”机制拼起来：在 <code>top.circ</code> 里用 <span class="path">项目 → 加载库 → Logisim-evolution 库…（Project → Load Library → Logisim-evolution Library…）</span> 选中 <code>cpu.circ</code>、<code>apu.circ</code>，它们就会出现在左侧浏览器里、能像普通部件一样拖出来实例化。<em>只要每个文件对外的输入/输出 Pin 不变，内部怎么改都不影响别人</em>——这就是多 circ 协作的关键，也是答辩时“我负责这个文件，对外接口就这几个 Pin”的天然边界。</p>
+
+<div class="box"><div class="t">本里程碑（= D · APU 的开头）只新建并改 <code>apu.circ</code></div>
+<pre>
+apu.circ                ← D 组的文件，本里程碑新建它
+├── BuzzerStress        ← 任务 A：声音压测（用完留作回归测试）
+└── PulseOneShot        ← 任务 B：单通道点亮（弹出 A4）
+   （后续里程碑再往这个文件加 Channel_Pulse / Channel_Tri / Channel_Noise / APU 顶层）
+</pre>
+<p style="margin-bottom:0"><code>top.circ</code> 和 <code>cpu.circ</code> 本里程碑<strong>先不用建</strong>——等做到 CPU / 顶层时再开新文件。</p></div>
+
+<div class="step">
+  <div class="num">0a</div>
+  <div class="body">
+    <h4>现有 coolproject.circ 留给顶层（A 组），本里程碑不动它</h4>
+    <p>仓库里已有的 <span class="path">coolproject.circ</span>（含一个空 <code>main</code>）就当 <code>top.circ</code> 用——以后 A 组在这里接线。你可以现在 <span class="path">文件 → 另存为…（File → Save As…）</span> 把它另存成 <code>top.circ</code>（可选，纯为名字清晰）。<strong>本里程碑不碰它。</strong></p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">0b</div>
+  <div class="body">
+    <h4>新建 <code>apu.circ</code> 文件</h4>
+    <p><span class="path">文件 → 新建（File → New）</span> 开一个新的空工程窗口 → <span class="path">文件 → 另存为…（File → Save As…）</span> 存成 <strong><code>apu.circ</code></strong>（建议放仓库的 <span class="path">circuits/</span> 目录，没有就新建一个）。这个文件就是 D 组的地盘；它默认自带一个 <code>main</code> 电路，本里程碑用不到、暂时不管。</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">0c</div>
+  <div class="body">
+    <h4>在 apu.circ 里新建子电路 <code>BuzzerStress</code></h4>
+    <p>确认当前窗口编辑的是 apu.circ。菜单 <span class="path">项目 → 添加电路…（Project → Add Circuit…）</span>，名字填 <code>BuzzerStress</code>，确定。左侧浏览器多出同名电路，<strong>双击</strong>进入它的画布。</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">0d</div>
+  <div class="body">
+    <h4>同法再建 <code>PulseOneShot</code></h4>
+    <p><span class="path">项目 → 添加电路…（Project → Add Circuit…）</span> → <code>PulseOneShot</code>。以后双击浏览器里的名字即可在两个测试电路之间切换。</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">0e</div>
+  <div class="body">
+    <h4>存盘习惯</h4>
+    <p><kbd>Ctrl</kbd>+<kbd>S</kbd> 随手存 apu.circ。重要节点另存一份备份（<code>apu_m1.circ</code>）——.circ 是 XML，损坏后 git 也难救，养成手动备份习惯。</p>
+  </div>
+</div>
+
+<!-- ===================== 1 ===================== -->
+<h2 id="s1"><span class="n">1</span>Logisim 基本操作速成（脚趾头级）</h2>
+<p>下面 6 个动作覆盖本里程碑全部操作。记住它们，后面不再重复解释。</p>
+
+<table>
+  <tr><th>动作</th><th>怎么做</th></tr>
+  <tr><td><strong>选/移动 部件</strong></td><td>点工具栏最左的<em>箭头</em>＝<strong>编辑工具（Edit Tool）</strong>。点中部件可拖动；空白处框选多个。</td></tr>
+  <tr><td><strong>放置部件</strong></td><td>在左侧浏览器里展开某个<em>库</em>（如 Wiring、Memory），点一下要的部件，再到画布上<em>点一下</em>放下。连续点可放多个；按 <kbd>Esc</kbd> 退出放置。</td></tr>
+  <tr><td><strong>改属性</strong></td><td>用箭头工具<em>选中</em>一个部件，左下角“属性表（Attribute Table）”会列出它的全部属性，直接在那里改数值（位宽、Value、Waveform 等）。</td></tr>
+  <tr><td><strong>连线</strong></td><td>还是箭头工具：把鼠标移到某个部件的<em>引脚端点</em>（小圆点），光标变成十字，<em>按住拖</em>到另一个端点松手即成一根线。线会自动走直角。</td></tr>
+  <tr><td><strong>拨动/查看值（Poke）</strong></td><td>点工具栏的<em>手指</em>图标＝<strong>手形工具（Poke Tool）</strong>。点输入 Pin 可改它的值；点 Clock 可手动打一拍；点 ROM 可翻看内容。</td></tr>
+  <tr><td><strong>给部件贴标签</strong></td><td>选中部件 → 属性表里的 <code>Label</code> 填名字（如 <code>FREQ</code>）。纯为可读，强烈建议给每个 Pin/ROM 贴标签。</td></tr>
+</table>
+
+<div class="box"><div class="t">看懂线的颜色（调试全靠它）</div>
+<p class="legend">
+<span><span class="dot" style="background:#2bbb2b"></span>亮绿 = 1（单 bit）</span>
+<span><span class="dot" style="background:#0a6b0a"></span>深绿 = 0</span>
+<span><span class="dot" style="background:#3344ff"></span>蓝 = 浮空/未驱动</span>
+<span><span class="dot" style="background:#cc2222"></span>红 = 冲突/错误</span>
+<span><span class="dot" style="background:#000"></span>黑 = 多位总线</span>
+<span><span class="dot" style="background:#888"></span>灰 = 宽度不匹配/未知</span>
+</p>
+<p style="margin-bottom:0"><strong>红线 = 两个输出顶牛</strong>（接错了）；<strong>灰线 = 两端位宽不一致</strong>（最常见的坑，比如把 14-bit 接到 8-bit）。看到红或灰先别往下做。</p></div>
+
+<div class="box tip"><div class="t">让仿真跑起来的三个开关（很多人卡在这）</div>
+<ul style="margin-bottom:0">
+  <li><span class="path">仿真 → 自动传播（Simulate → Auto-Propagate）</span>：总开关，必须打勾。</li>
+  <li><span class="path">仿真 → 启用自动节拍（Simulate → Auto-Tick Enabled）</span>：让 Clock 自动跳动。不打勾时钟不会动。</li>
+  <li><span class="path">仿真 → 自动节拍频率（Simulate → Auto-Tick Frequency）</span>：选时钟快慢（Hz/kHz）。本里程碑选个中高速（如 1–4 KHz）来听效果。</li>
+</ul></div>
+
+<!-- ===================== 2 ===================== -->
+<h2 id="s2"><span class="n">2</span>部件速查表：本里程碑要用的零件</h2>
+<p>“库”指左侧浏览器里的分类。所有数值都是<strong>已核实</strong>的（依据 Logisim 官方组件文档与本仓库 <code>ref/logisim-evolution</code> 源码）。</p>
+<table>
+  <tr><th>部件</th><th>库</th><th>关键属性 / 引脚</th><th>本里程碑怎么用</th></tr>
+  <tr>
+    <td><strong>蜂鸣器<br>Buzzer</strong></td><td>输入/输出（扩展）<br>I/O&nbsp;Extra</td>
+    <td>引脚：<code>FREQ</code>(14-bit)、<code>ENABLE</code>(1-bit)、<code>VOL</code>(默认7-bit)、<code>PW</code>占空比(8-bit)。属性：<code>波形 Waveform</code>、<code>Frequency&nbsp;Measurement</code>(Hz)、<code>音量位宽 Volume Width</code>。</td>
+    <td>声音出口。<strong>FREQ 必须在 20–20000 才出声</strong>；14-bit 上限 16383（我们的频率表已钳好）。</td>
+  </tr>
+  <tr>
+    <td><strong>ROM</strong></td><td>存储器<br>Memory</td>
+    <td>引脚：<code>A</code>(地址,西)、<code>D</code>(数据,东)、<code>sel</code>(南,1-bit)。属性：<code>地址位宽 Address Bit Width</code>(2–24)、<code>数据位宽 Data Bit Width</code>。右键 → <span class="path">加载映像…（加载映像…（Load Image…））</span> 载入 <code>v2.0&nbsp;raw</code> 文件。</td>
+    <td>当频率查找表。<code>sel</code> 单 ROM 时悬空即可（默认输出）。</td>
+  </tr>
+  <tr>
+    <td><strong>计数器<br>Counter</strong></td><td>存储器<br>Memory</td>
+    <td>属性：<code>Data&nbsp;Bits</code>。引脚：时钟、输出 Q、（可能有）使能/载入/清零。</td>
+    <td>压测里自动扫频：每拍 +1，输出当 timer。</td>
+  </tr>
+  <tr>
+    <td><strong>时钟<br>Clock</strong></td><td>线路<br>Wiring</td>
+    <td>1-bit 输出。靠「仿真（Simulate）」菜单的 启用自动节拍（Auto-Tick）和 自动节拍频率（Auto-Tick Frequency）驱动。</td>
+    <td>给 Counter 打拍。</td>
+  </tr>
+  <tr>
+    <td><strong>常量<br>Constant</strong></td><td>线路<br>Wiring</td>
+    <td>属性：<code>Data&nbsp;Bits</code>、<code>Value</code>(十六进制)、<code>Facing</code>。</td>
+    <td>给 ENABLE/VOL/PW/timer 喂固定值。</td>
+  </tr>
+  <tr>
+    <td><strong>引脚<br>Pin</strong></td><td>线路<br>Wiring</td>
+    <td>属性：<code>Type</code>(input/output)、<code>Data&nbsp;Bits</code>。</td>
+    <td>做可手动拨动的 timer 输入（用 Poke 改值）。</td>
+  </tr>
+  <tr>
+    <td><strong>分线器<br>Splitter</strong></td><td>线路<br>Wiring</td>
+    <td>把多位总线拆成/拼成若干位段。属性：<code>Bit&nbsp;Width&nbsp;In</code>、<code>Fan&nbsp;Out</code> 等。</td>
+    <td>本里程碑用不到，列出备查（M2 拼 timer 用）。</td>
+  </tr>
+  <tr>
+    <td><strong>探针 Probe</strong> / <strong>16&nbsp;进制数码显示<br>Hex&nbsp;Digit&nbsp;Display</strong></td><td>线路 / 输入输出<br>Wiring / I/O</td>
+    <td>把总线当前值显示出来（Probe 显示原始值，Hex Digit 显示十六进制数字）。</td>
+    <td>盯着 timer / 频率值，方便调试。</td>
+  </tr>
+</table>
+
+<div class="box tip"><div class="t">找不到某个脚？两招（强烈建议先用第 1 招）</div>
+<p><strong>① 把部件外观换成经典：</strong>选中部件 → 属性表 <code>外观（Appearance）</code> → 选 <code>经典 Logisim（Classic Logisim）</code>。默认的“演化/IEEE”大符号脚多、还带 IEC 注解（比如 ROM 右边那排 <code>A 0…13</code> 其实只是给<em>一根 14 位总线</em> D 标的位编号，不是 14 个脚）。换经典后：<br>
+&nbsp;&nbsp;• <strong>ROM</strong> = 简单方块：<code>A</code>(地址) 在左、<strong><code>D</code>(数据，单根总线) 在右</strong>、<code>sel</code> 在下。<br>
+&nbsp;&nbsp;• <strong>计数器（Counter）</strong> = 时钟脚在底部带 ▷ 那个、<code>D</code> 在左、<code>Q</code> 在右。</p>
+<p><strong>② 鼠标悬停看 tooltip：</strong>把光标停在任意脚上，Logisim 会弹出它的名字。<strong>蜂鸣器（Buzzer）的 4 个输入脚</strong>就靠这个认（朝向一变方位就转，别死记）：</p>
+<table style="margin:6px 0">
+  <tr><th>悬停提示</th><th>脚</th><th>位宽</th><th>接什么</th></tr>
+  <tr><td>频率（frequency）</td><td>FREQ</td><td>14（固定）</td><td>← freq ROM 的 D</td></tr>
+  <tr><td>启用声音（Enable sound）</td><td>ENABLE</td><td>1（固定）</td><td>← 常量 1</td></tr>
+  <tr><td>音量（volume）</td><td>VOL</td><td>默认 7（由 <code>音量位宽 Volume Width</code> 定）</td><td>← 常量 0x40</td></tr>
+  <tr><td>占空比（Duty cycle）</td><td>PW</td><td>8（固定）</td><td>← 常量 0x80</td></tr>
+</table>
+<p style="margin-bottom:0">默认朝向下 FREQ/ENABLE/VOL 在平边竖排（频率上·启用中·音量下），占空比在一个角上。想转方向用 <code>朝向（Facing）</code> 属性。</p></div>
+
+<!-- ===================== 3 ===================== -->
+<h2 id="s3"><span class="n">3</span>任务 A · <code>BuzzerStress</code>：先把声音风险压掉</h2>
+<div class="box warn"><div class="t">为什么第一件事是这个，而不是搭 CPU</div>
+<p>核对过 Logisim 的 <code>Buzzer.java</code> 源码：<strong>Buzzer 每次输入变化都会重建 1 秒音频缓冲并新开一个音频 Clip</strong>，开发者自己注释警告“别接 4kHz”。真实音乐的颤音会让频率每秒变几十次 × 4 路。<em>这条链路扛不扛得住，决定整套 APU 方案成不成立。</em>所以先花 20 分钟用一个最小电路把它压测掉——若流畅则全线绿灯，若卡则我们改“按帧采样”节流。<strong>绝不能等 CPU 都搭完才发现声音垮。</strong></p></div>
+
+<h3>这个电路长这样（数据流）</h3>
+<pre>
+ Clock ──► Counter(11-bit) ──► ROM[freq_pulse] ──► Buzzer.FREQ
+ (Simulate         每拍+1=timer    timer→真实Hz       Waveform=Square
+  自动tick)                                            ▲   ▲   ▲
+                                          ENABLE=1 ────┘   │   │
+                                          VOL=0x40(7bit)───┘   │
+                                          PW=0x80(8bit, 50%)───┘
+</pre>
+
+<div class="step"><div class="num">A1</div><div class="body">
+  <h4>双击进入 <code>BuzzerStress</code> 子电路</h4>
+  <p>确认左下角标题是 BuzzerStress 而不是 main。</p>
+</div></div>
+<div class="step"><div class="num">A2</div><div class="body">
+  <h4>放 Clock</h4>
+  <p>浏览器 <span class="path">线路 → 时钟（Wiring → Clock）</span>，画布左侧点一下放下。</p>
+</div></div>
+<div class="step"><div class="num">A3</div><div class="body">
+  <h4>放 计数器（Counter），设 11 位</h4>
+  <p><span class="path">存储器 → 计数器（Memory → Counter）</span> 放在 时钟（Clock）右边。选中它，属性表把 <code>数据位宽 Data Bits</code> 改为 <strong>11</strong>。</p>
+  <p><strong>时钟脚在哪？</strong>在计数器<em>左边</em>那排控制脚里、带<strong>小三角 ▷</strong>、标着 <code>2,3,5+/C6</code> 的那一个（IEEE 符号；源码 <code>Counter.java</code> 里的 CK 脚，west 边）。把 时钟（Clock）的输出连到它。</p>
+  <p><strong>要让它真的会数，</strong>还得：把 <code>G5</code>（计数使能 ct）接一个 <span class="path">线路 → 常量（Wiring → Constant）</span>、位宽 1、值 = <strong>1</strong>（否则时钟在跳、计数却不动）；<code>M1 [load]</code> 与 <code>R</code> 接 0 或不接。<br><em>嫌这个大符号难认？选中计数器 → 属性表 <code>外观 Appearance</code> 换成 Classic（经典），脚更少更直观，功能一样。</em></p>
+</div></div>
+<div class="step"><div class="num">A4</div><div class="body">
+  <h4>放 ROM，设 11/14 位，载入频率表</h4>
+  <p><span class="path">存储器 → ROM（Memory → ROM）</span> 放在 Counter 右边。属性表：<code>地址位宽 Address Bit Width</code> = <strong>11</strong>，<code>数据位宽 Data Bit Width</code> = <strong>14</strong>。<br>
+  <strong>右键这个 ROM → <span class="path">加载映像…（Load Image…）</span></strong> → 选 <span class="path">script/out/freq_pulse.txt</span>。载入后 ROM 内部会显示一堆十六进制值（地址 0 处应是 <code>3fff</code>）。<br>
+  把 Counter 的输出（11-bit）连到 ROM 的 <code>A</code>（西边）。</p>
+</div></div>
+
+<div class="box warn"><div class="t">★ 加载映像时弹出「Hex 文件格式」对话框？只看顶部那一行</div>
+<p>对话框顶部会写 <code>decoded N of M words, K bits each</code>，格式默认选 <strong>v2.0 raw</strong>（下面 words / auto / big-endian 默认勾选，<em>都不用动</em>）。关键看这行对不对：</p>
+<ul style="margin-bottom:0">
+  <li><strong>正确</strong>：<code>decoded 2048 of 2048 words, 14 bits each</code> → 直接点 <strong>确定</strong>。</li>
+  <li><strong>出错例（你刚遇到的）</strong>：<code>decoded 2048 of <strong>256</strong> words, <strong>8</strong> bits each</code> → 说明 ROM 位宽还没设对（还是默认 8 位地址 / 8 位数据）。它会把 14 位频率值<em>砍成低 8 位</em>（如 <code>3fff→ff</code>、<code>3e6c→6c</code>）、且只装前 256 个，<strong>音高全错</strong>。<br>→ 点 <strong>取消</strong>，先把 <code>地址位宽=11</code>、<code>数据位宽=14</code> 设好，再右键重新 加载映像（Load Image…）。</li>
+</ul></div>
+<div class="step"><div class="num">A5</div><div class="body">
+  <h4>放 Buzzer，设方波</h4>
+  <p><span class="path">输入/输出（扩展）→ 蜂鸣器（Input/Output Extra → Buzzer）</span> 放在 ROM 右边。属性表：<code>波形 Waveform</code> = <strong>Square</strong>，<code>Frequency Measurement</code> = <strong>Hz</strong>（默认），<code>音量位宽 Volume Width</code> 保持 <strong>7</strong>。<br>
+  把 ROM 的 <code>D</code>（东边，14-bit）连到 Buzzer 的 <code>FREQ</code> 脚。<em>两端都是 14 位，线应是黑色总线，不是灰色</em>——灰了说明位宽没对上，回去检查。</p>
+</div></div>
+<div class="step"><div class="num">A6</div><div class="body">
+  <h4>给 Buzzer 的另外三个脚喂常量</h4>
+  <p>放三个 <span class="path">线路 → 常量（Wiring → Constant）</span>：<br>
+  • <code>ENABLE</code>：Data Bits=<strong>1</strong>，Value=<strong>1</strong> → 接 Buzzer 的 ENABLE 脚（中间那个 1-bit 脚）。<br>
+  • <code>VOL</code>：Data Bits=<strong>7</strong>，Value=<strong>40</strong>（十六进制，=64，约半音量）→ 接 VOL 脚。<br>
+  • <code>PW</code>：Data Bits=<strong>8</strong>，Value=<strong>80</strong>（=128，占空比 50%）→ 接 PW 脚。</p>
+</div></div>
+<div class="step"><div class="num">A7</div><div class="body">
+  <h4>开仿真，听！</h4>
+  <p>依次：<span class="path">仿真 → 自动传播（Simulate → Auto-Propagate）</span>✔ → <span class="path">启用自动节拍（Auto-Tick Enabled）</span>✔ → <span class="path">自动节拍频率（Auto-Tick Frequency）</span> 先选 <strong>1 KHz</strong>。<br>
+  Counter 会不停 +1，timer 0→2047 循环，频率随之扫动，你应当<em>听到一个连续上下扫的音调</em>。</p>
+</div></div>
+
+<div class="box good"><div class="t">判定标准（这就是本任务的目的）</div>
+<ul style="margin-bottom:0">
+  <li><strong>绿灯</strong>：扫频音<em>连续、不爆、不卡顿</em>。逐步把 Tick Frequency 调到 2K/4K 再听。能撑住 → APU 方案稳，放心往下做。</li>
+  <li><strong>黄灯</strong>：低速流畅、高速开始爆音/卡顿。→ 记下临界频率；后续给 Buzzer 输入加“按帧采样”寄存器（约 60Hz 更新），把变化率压下来。</li>
+  <li><strong>红灯</strong>：几乎不出声或严重卡死。→ 先别搭 4 通道，回来找我，我们改方案（节流 / 降颤音）。</li>
+</ul></div>
+
+<div class="step"><div class="num">A8</div><div class="body">
+  <h4>（可选但强烈建议）压测 4 路同响</h4>
+  <p>把 ROM→Buzzer 那串复制成 4 份（4 个 Buzzer，可共用同一个 Counter/ROM，也可各接不同 Counter 让频率不同）。同时开声，验证<em>多 Buzzer 一起响</em>时声卡能否自动混音且不卡。这直接预演真实 4 声道场景。</p>
+</div></div>
+
+<!-- ===================== 4 ===================== -->
+<h2 id="s4"><span class="n">4</span>任务 B · <code>PulseOneShot</code>：用频率表弹出 A4 和音阶</h2>
+<p>任务 A 证明“频率→声音”能跑。任务 B 把它变成<em>可控音高</em>：你给一个 timer 值，它发出对应的真实 NES 音高。这就是单个 Pulse 通道的核心（暂不接寄存器拆分，纯手动喂 timer，验证音高正确）。</p>
+
+<h3>数据流</h3>
+<pre>
+ Pin[timer] (11-bit, 用Poke改值) ──► ROM[freq_pulse] ──► Buzzer.FREQ
+                                                          Waveform=Square
+   ENABLE=1 / VOL=0x40 / PW=0x80 ──────────────────────► (同任务A)
+ （可选）Pin 上再接一个 Probe，随时看你拨的 timer 值
+</pre>
+
+<div class="step"><div class="num">B1</div><div class="body">
+  <h4>进入 <code>PulseOneShot</code></h4>
+</div></div>
+<div class="step"><div class="num">B2</div><div class="body">
+  <h4>放一个输入 Pin 当 timer</h4>
+  <p><span class="path">线路 → 引脚（Wiring → Pin）</span>。选中它：<code>Type</code>=<strong>Input</strong>，<code>Data Bits</code>=<strong>11</strong>，<code>Label</code>=<code>timer</code>。</p>
+</div></div>
+<div class="step"><div class="num">B3</div><div class="body">
+  <h4>放 ROM（同任务 A 的设置）</h4>
+  <p><code>地址位宽 Address Bit Width</code>=<strong>11</strong>，<code>数据位宽 Data Bit Width</code>=<strong>14</strong>，<em>务必先设好位宽再</em>右键 <span class="path">加载映像…（Load Image…）</span> → <span class="path">script/out/freq_pulse.txt</span>（加载对话框若显示 <code>256 words / 8 bits</code> 就是位宽没设，见任务 A 那个红框）。<br>
+  Pin <code>timer</code> → ROM 的 <code>A</code>。</p>
+</div></div>
+<div class="step"><div class="num">B4</div><div class="body">
+  <h4>放 Buzzer + 三个常量（同任务 A 的 A5、A6）</h4>
+  <p>Waveform=Square；ROM <code>D</code>(14)→Buzzer <code>FREQ</code>；ENABLE=1、VOL=0x40、PW=0x80。</p>
+</div></div>
+<div class="step"><div class="num">B5</div><div class="body">
+  <h4>开仿真，拨 timer = 253，听 A4</h4>
+  <p>开 <span class="path">自动传播（Auto-Propagate）</span>（这次<em>不需要</em>自动节拍（Auto-Tick），没有时钟）。切到 <em>Poke 工具</em>（手指），点 <code>timer</code> 那个 Pin，输入十进制 <strong>253</strong>（或十六进制 <code>FD</code>）。<br>
+  频率表里 <code>freq_pulse[253] = 440 Hz = 标准音 A4</code>，你应当听到一个稳定的 440Hz 方波。</p>
+</div></div>
+<div class="step"><div class="num">B6</div><div class="body">
+  <h4>弹个音阶证明音高可控</h4>
+  <p>继续用 Poke 改 timer，验证“数值越小、音越高”。参考几个值（Pulse，NTSC）：</p>
+  <table style="margin:6px 0">
+    <tr><th>timer</th><th>≈频率</th><th>≈音</th></tr>
+    <tr><td>253</td><td>440 Hz</td><td>A4</td></tr>
+    <tr><td>190</td><td>≈586 Hz</td><td>≈D5</td></tr>
+    <tr><td>126</td><td>≈881 Hz</td><td>≈A5（高八度）</td></tr>
+    <tr><td>63</td><td>≈1748 Hz</td><td>≈A6</td></tr>
+  </table>
+  <p>能听出音阶关系 = 频率表 + Buzzer 这条链路<strong>音高正确</strong>。</p>
+</div></div>
+
+<div class="box tip"><div class="t">小知识：为什么不用接 Clock</div>
+<p style="margin-bottom:0">Buzzer 的音高来自 FREQ 引脚的<em>数值</em>，由它内部的音频线程按真实时间发声，<strong>跟 Logisim 时钟无关</strong>。所以静态喂一个 timer 就能持续出声。Logisim 时钟只在“需要随时间变化”（计数、CPU 走指令）时才用到。</p></div>
+
+<!-- ===================== 5 ===================== -->
+<h2 id="s5"><span class="n">5</span>里程碑 1 验收清单</h2>
+<ul class="chk">
+  <li>新建了 <code>apu.circ</code> 文件，里面有 <code>BuzzerStress</code> 与 <code>PulseOneShot</code> 两个子电路。</li>
+  <li>BuzzerStress：Counter 自动扫频，能听到连续扫频音；记录下它在 1K/2K/4K Tick 下是否流畅（<span class="tag q">这条结论决定后续要不要节流</span>）。</li>
+  <li>（建议）4 个 Buzzer 同时响过一次，确认多路混音可用。</li>
+  <li>PulseOneShot：timer=253 时听到稳定 A4(440Hz)。</li>
+  <li>改几个 timer 值能听出音阶（越小越高），确认音高映射正确。</li>
+  <li>所有线都是绿/黑，<strong>没有红线或灰线</strong>。</li>
+  <li>已存盘并备份一份 <code>apu_m1.circ</code>。</li>
+</ul>
+
+<div class="box good"><div class="t">做完这一步，你已经验证了什么</div>
+<p style="margin-bottom:0">① 频率换算表 ROM 正确（音高对）；② Buzzer 出声链路可用；③ 最关键的——<em>Buzzer 在频率快速变化下扛不扛得住</em>（整套 APU 方案的命门）。这三件事一旦绿灯，后面就是按部就班把寄存器译码、四通道、CPU 一块块接上去。</p></div>
+
+<!-- ===================== 6 ===================== -->
+<h2 id="s6"><span class="n">6</span>下一里程碑预告</h2>
+<p><strong>里程碑 2 = 把 <code>PulseOneShot</code> 升级成真正的 Pulse 通道</strong>：用 4 个 8-bit 寄存器接收 <code>$4000/$4002/$4003/$4015</code> 的写入，用 Splitter 把 <code>reg2(低8)+reg3(低3)</code> 拼成 11-bit timer，再把音量/占空比/使能接上；然后复制成 Pulse2/Triangle/Noise 四通道，封装成 <code>APU</code> 子电路。到时另开一份文档,避免一次塞太多。</p>
+<p style="margin-bottom:0"><strong>但在那之前，请先把任务 A 的压测结论告诉我</strong>——如果是黄/红灯，里程碑 2 的设计要先加节流，顺序会变。</p>
+
+<footer>
+  Milestone 1 of N · 生成于 2026-06-05 · 依据：Logisim Evolution v4.1.0 官方组件文档 + 本仓库 ref 源码核实 · 资产：script/out/freq_pulse.txt 等 · 配套：plan/detailed_plan.html、plan/reviewed_execution_guide.html
+</footer>
+
+</div>
+</body>
+</html>

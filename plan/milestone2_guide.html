@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>里程碑 2 · 手把手施工指引 — 寄存器驱动的单 Pulse 通道 → 4 路 APU</title>
+<style>
+  :root{
+    --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
+    --line:rgba(80,60,40,.14); --text:#2d2520; --dim:#6a5a4c; --mute:#9a8a78;
+    --accent:#a8410d; --cyan:#2c6770; --red:#8b2820; --green:#4d6b2a; --purple:#5e3677;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+       font-family:"Segoe UI","Noto Sans SC",system-ui,sans-serif;font-size:15px;line-height:1.78;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 40px 120px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:22px;margin-bottom:10px}
+  h1{font-size:29px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  h1 .sub{display:block;font-size:15px;color:var(--dim);font-weight:400;margin-top:8px}
+  .meta{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--mute);
+        letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:21px;margin:46px 0 12px;padding-top:10px;border-top:1px solid var(--line);
+     color:var(--accent)}
+  h2 .n{font-family:"JetBrains Mono",monospace;font-size:13px;color:#fff;background:var(--accent);
+        padding:2px 9px;border-radius:4px;margin-right:10px}
+  h3{font-size:17px;margin:24px 0 8px}
+  p{margin:9px 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.85em;background:var(--deep);
+       padding:1px 6px;border-radius:3px;color:var(--accent)}
+  strong{color:var(--accent)} em{color:var(--cyan);font-style:normal;font-weight:600}
+  ul,ol{margin:9px 0 14px 22px} li{margin-bottom:6px}
+  kbd{font-family:"JetBrains Mono",monospace;font-size:.8em;background:#fff;border:1px solid var(--line);
+      border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--text)}
+  .path{font-family:"JetBrains Mono",monospace;font-size:.85em;color:var(--purple);font-weight:600}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  pre{background:#fffdf8;border:1px solid var(--line);border-left:3px solid var(--cyan);
+      padding:14px 18px;margin:14px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;
+      line-height:1.6;overflow-x:auto;border-radius:0 6px 6px 0;color:var(--text)}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+       padding:13px 19px;margin:14px 0;border-radius:0 6px 6px 0}
+  .box.warn{border-left-color:var(--red);background:rgba(139,40,32,.03)}
+  .box.good{border-left-color:var(--green);background:rgba(77,107,42,.045)}
+  .box.tip{border-left-color:var(--purple);background:rgba(94,54,119,.04)}
+  .box .t{font-weight:700;margin-bottom:5px;color:var(--cyan)}
+  .box.warn .t{color:var(--red)} .box.good .t{color:var(--green)} .box.tip .t{color:var(--purple)}
+  .step{display:grid;grid-template-columns:42px 1fr;gap:16px;margin:16px 0;align-items:start}
+  .step .num{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
+             display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;
+             font-weight:600;font-size:13px;flex-shrink:0;margin-top:2px}
+  .step .body{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 18px}
+  .step .body h4{font-size:15px;margin:0 0 4px;color:var(--text)}
+  .step .body p{margin:5px 0}
+  .tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10px;padding:2px 8px;
+       border-radius:3px;color:#fff;letter-spacing:.04em;vertical-align:middle}
+  .tag.do{background:var(--accent)} .tag.ok{background:var(--green)} .tag.q{background:var(--purple)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 22px;margin:18px 0}
+  .toc ol{margin:0;list-style:none;columns:2;column-gap:30px}
+  .toc a{color:var(--text);text-decoration:none} .toc a:hover{color:var(--accent)}
+  .toc .n{color:var(--accent);font-family:"JetBrains Mono",monospace;margin-right:7px}
+  .chk{list-style:none;margin-left:0}
+  .chk li{padding-left:30px;position:relative;margin-bottom:9px}
+  .chk li:before{content:"\2610";position:absolute;left:4px;color:var(--accent);font-size:18px;top:-2px}
+  footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--line);color:var(--mute);
+         font-family:"JetBrains Mono",monospace;font-size:11px}
+  .legend span{display:inline-block;margin-right:16px;font-size:12px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:middle;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="meta">Milestone 2 · 手把手 · 单人单刷 · Logisim Evolution v4.1.0</div>
+  <h1>里程碑 2：让寄存器来驱动声音 —— 真正的单 Pulse 通道
+    <span class="sub">里程碑 1 你用手直接喂 timer 让 Buzzer 出声。本里程碑把“手喂”换成“写寄存器”：搭一个寄存器前端（译码器 + 寄存器组）+ 一个可复用的 <code>Channel_Pulse</code> 子电路，从 <code>$4000/$4002/$4003/$4015</code> 解码出音高 / 音量 / 占空比 / 使能。做完你会得到一个<strong>用 NES 寄存器协议驱动的、可复用的单通道</strong>，并顺手把它扩成 4 路、封进 <code>APU</code> 子电路——这正是接 CPU 前的最后一块拼图。</span>
+  </h1>
+</header>
+
+<div class="box good">
+  <div class="t">里程碑 1 的结论（已实测，作为本里程碑的地基）</div>
+  <ul style="margin-bottom:0">
+    <li>频率表 + 蜂鸣器（Buzzer）链路<strong>音高正确</strong>：<code>freq_pulse[253] = 440Hz = A4</code>，手喂 timer 能弹音阶。</li>
+    <li>蜂鸣器（Buzzer）<strong>扛得住</strong>频率变化（用分线器（Splitter）取计数器（Counter）高位分频后，扫频流畅）。</li>
+    <li><strong>核心原理（本里程碑要继续遵守）：</strong>蜂鸣器（Buzzer）每次输入变化都会重建音频缓冲，<em>所以绝不能让高速时钟（Clock）每一拍都改它的输入</em>。换音率应当压在<strong>音乐帧率 ~60Hz</strong>。本里程碑会专门加一道“按帧采样”门控来落实这一点（见 §4.5）。</li>
+  </ul>
+</div>
+
+<div class="box tip">
+  <div class="t">开工前确认三件事</div>
+  <ul style="margin-bottom:0">
+    <li>里程碑 1 已完成：<code>apu.circ</code> 存在，里面有 <code>BuzzerStress</code> / <code>PulseOneShot</code> 两个子电路，<span class="path">script/out/freq_pulse.txt</span> 能正确载入（<code>地址位宽=11、数据位宽=14</code>）。</li>
+    <li>本里程碑<strong>仍然完全不碰 CPU</strong>，全部在 <code>apu.circ</code> 里干活。我们手动扮演 CPU——用几个输入 引脚（Pin）+ 一个 按钮（Button）模拟“CPU 发起一次 WRITE”。</li>
+    <li>每一步都给了精确的 <em>库 / 部件 / 属性数值 / 连线</em>，菜单一律 <code>中文（English）</code> 双语。照做即可。</li>
+  </ul>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><span class="n">0</span><a href="#s0">这一里程碑要搭什么（总览 + 数据流）</a></li>
+    <li><span class="n">1</span><a href="#s1">本里程碑新增部件速查</a></li>
+    <li><span class="n">2</span><a href="#s2">寄存器前端 RegFile（译码器 + 寄存器组）</a></li>
+    <li><span class="n">3</span><a href="#s3">Channel_Pulse 子电路（寄存器 → 音高/音量/占空比/使能）</a></li>
+    <li><span class="n">4</span><a href="#s4">接线 &amp; 手动写寄存器，听 A4</a></li>
+  <li><span class="n">4.5</span><a href="#s45">★ 按帧采样门控（自动扫表/接 CPU 前的保护）</a></li>
+    <li><span class="n">5</span><a href="#s5">扩展成 4 通道 + 封装 APU 子电路</a></li>
+    <li><span class="n">6</span><a href="#s6">里程碑 2 验收清单</a></li>
+    <li><span class="n">7</span><a href="#s7">下一里程碑预告</a></li>
+  </ol>
+</div>
+
+<!-- ===================== 0 ===================== -->
+<h2 id="s0"><span class="n">0</span>这一里程碑要搭什么</h2>
+
+<h3>从“手喂 timer”到“写寄存器”</h3>
+<p>真实 NES 的 CPU 不会直接给声卡一个频率，它<em>往寄存器里写字节</em>：把音高拆成 <code>$4002</code>(低 8 位)+<code>$4003</code>(高 3 位)，把音量/占空比塞进 <code>$4000</code>，用 <code>$4015</code> 开关声道。APU 再把这些寄存器值“翻译”成频率/音量喂给发声单元。本里程碑就是<strong>在 Logisim 里复刻这套“寄存器 → 翻译 → 蜂鸣器（Buzzer）”的链路</strong>。</p>
+
+<div class="box"><div class="t">两个新子电路（都建在 <code>apu.circ</code> 里）</div>
+<pre>
+apu.circ
+├── BuzzerStress      （里程碑 1，留作回归测试，不动）
+├── PulseOneShot      （里程碑 1，留作对照，不动）
+├── RegFile      ★新建：寄存器前端 = 译码器(Decoder) + 4 个寄存器(Register)
+│                       对外像 CPU 的写口：reg_id(4) / value(8) / WR(1) 进，寄存器值出
+└── Channel_Pulse ★新建：可复用的“一路 Pulse 通道”
+                        = timer 拼接 + freq_pulse ROM + 音量/占空比/使能 + 蜂鸣器(Buzzer)
+   （§5 再把 Channel_Pulse 复制/改造成 Pulse2 / Triangle / Noise，最后封一个 APU 顶层）
+</pre>
+<p style="margin-bottom:0">分两层的好处：<strong>RegFile 是所有通道共享的“写总线”</strong>（CPU 以后只跟它打交道）；<strong>Channel_Pulse 是纯“翻译+发声”</strong>，不关心写入时序。这样 4 个通道能共用一套寄存器，答辩时也好讲：“写口就这 3 根线”。</p></div>
+
+<h3>整体数据流（本里程碑搭成后的样子）</h3>
+<pre>
+ 手动模拟 CPU 写入                RegFile（共享写口）                Channel_Pulse（一路）
+ ┌─────────────┐      reg_id(4) ┌────────────────┐ reg0(8) ┌──────────────────────────────┐
+ │ reg_id Pin  ├───────────────►│ 译码器 Decoder  │────────►│ reg0[3:0]→VOL  reg0[7:6]→占空比 │
+ │ value  Pin  ├──────value(8)─►│  选择位数=4     │ reg2(8) │ reg2 ┐                          │
+ │ WR     按钮 ├────WR(触发)───►│ →16 路使能      │────────►│ reg3 ┴─Splitter→timer(11)        │
+ └─────────────┘                │ 4×寄存器Register│ reg3(8) │          → freq_pulse ROM → FREQ │
+                                │ (reg0/2/3/9)    │────────►│ reg9[0] → ENABLE                 │──► 蜂鸣器
+                                └────────────────┘ reg9(8) └──────────────────────────────┘   Buzzer
+                                                   ────────►   （§4.5 会在 Buzzer 前再加一排
+                                                                “按帧采样”寄存器，~60Hz 才更新）
+</pre>
+
+<!-- ===================== 1 ===================== -->
+<h2 id="s1"><span class="n">1</span>本里程碑新增部件速查</h2>
+<p>里程碑 1 用过的 蜂鸣器（Buzzer）/ ROM / 时钟（Clock）/ 计数器（Counter）/ 常量（Constant）/ 引脚（Pin）/ Splitter（分线器）不再赘述。下面是<strong>本里程碑新登场</strong>的三个部件，数值均依据 <code>ref/logisim-evolution</code>（v4.1.0）源码核实。</p>
+<table>
+  <tr><th>部件</th><th>库</th><th>关键属性 / 引脚</th><th>本里程碑怎么用</th></tr>
+  <tr>
+    <td><strong>寄存器<br>Register</strong></td><td>存储器<br>Memory</td>
+    <td>属性：<code>数据位宽（Data Bits）</code>、<code>触发方式（Trigger）</code>(默认上升沿)。引脚：<code>D</code>(数据入)、<code>Q</code>(当前值出)、<em>时钟</em>(三角▷)、<em>写使能 en</em>(“为 0 时忽略时钟触发”)、<em>清除 clr</em>(“为 1 时异步清 0”)。</td>
+    <td>存住 <code>$4000/$4002/$4003/$4015</code> 的值。<strong>时钟接 WR，写使能接译码器对应输出</strong>——只有被选中那个寄存器在 WR 上升沿才更新。</td>
+  </tr>
+  <tr>
+    <td><strong>译码器<br>Decoder</strong></td><td>复用器<br>Plexers</td>
+    <td>属性：<code>选择位数（Select Bits）</code>=4 → <strong>16 路输出</strong>；<code>启用使能（Include Enable?）</code>(可设“否”省事)。引脚：<em>选择</em>(reg_id 进)、16 个<em>输出</em>(选中那路=1，其余=0)。</td>
+    <td>把 4-bit <code>reg_id</code> 译成 16 根“写使能”线（one-hot）。我们只用到第 0/2/3/9 路。</td>
+  </tr>
+  <tr>
+    <td><strong>按钮<br>Button</strong></td><td>输入/输出<br>Input/Output</td>
+    <td>1-bit 输出：按下=1、松开=0（一次点击 = 一个上升沿+下降沿）。</td>
+    <td>当 <code>WR</code> 写脉冲：点一下 = 模拟 CPU 发起一次 WRITE。<em>找不到就用一个 1 位 引脚（Pin），手形工具（Poke Tool）点它 0→1 也行。</em></td>
+  </tr>
+</table>
+
+<div class="box tip"><div class="t">寄存器（Register）的脚怎么认</div>
+<p style="margin-bottom:0">和里程碑 1 一样，<strong>嫌默认大符号难认就把 <code>外观（Appearance）</code> 换成 经典（Classic）</strong>。经典外观下寄存器（Register）= 一个方块：<code>D</code> 在左、<code>Q</code> 在右、底部带 ▷ 的是<em>时钟</em>、另一个小脚是<em>写使能（en）</em>。鼠标悬停在任意脚上会弹出 tooltip（如“输入：写使能（为 0 时忽略时钟触发）”），照提示接即可，别死记方位。</p></div>
+
+<!-- ===================== 2 ===================== -->
+<h2 id="s2"><span class="n">2</span>寄存器前端 <code>RegFile</code>：译码器 + 寄存器组</h2>
+<p>先建“写口”。它接收 <code>reg_id / value / WR</code>，把 <code>value</code> 锁进 <code>reg_id</code> 选中的那个寄存器。本里程碑只需 Pulse1 用到的 4 个寄存器：<code>reg0=$4000</code>、<code>reg2=$4002</code>、<code>reg3=$4003</code>、<code>reg9=$4015</code>（声道使能；按计划 <code>$4015</code> 重映射到 reg_id 9）。</p>
+
+<div class="step"><div class="num">R1</div><div class="body">
+  <h4>新建子电路 <code>RegFile</code></h4>
+  <p>确认在编辑 <code>apu.circ</code>。<span class="path">项目 → 添加电路…（Project → Add Circuit…）</span>，名字 <code>RegFile</code>，双击进入。</p>
+</div></div>
+<div class="step"><div class="num">R2</div><div class="body">
+  <h4>放 3 个输入 引脚（Pin）当“写口”</h4>
+  <p><span class="path">线路 → 引脚（Wiring → Pin）</span>，放三个，分别选中改属性：<br>
+  • <code>类型（Type）=Input</code>，<code>数据位宽（Data Bits）=4</code>，<code>标签（Label）=reg_id</code><br>
+  • <code>类型（Type）=Input</code>，<code>数据位宽（Data Bits）=8</code>，<code>标签（Label）=value</code><br>
+  • <code>类型（Type）=Input</code>，<code>数据位宽（Data Bits）=1</code>，<code>标签（Label）=WR</code>（这根当“写脉冲/时钟”用）</p>
+</div></div>
+<div class="step"><div class="num">R3</div><div class="body">
+  <h4>放 译码器（Decoder），设 4 选择位 → 16 路</h4>
+  <p><span class="path">复用器 → 译码器（Plexers → Decoder）</span>。选中它：<code>选择位数（Select Bits）=4</code>（输出变成 16 路）。把 <code>reg_id</code> 接到它的<em>选择</em>脚。<br>
+  <em>若它带“使能”脚（属性 <code>启用使能（Include Enable?）=是</code>）</em>：要么把该属性改成 <strong>否</strong>，要么给使能脚接一个 值=1 的 常量（Constant），否则整个译码器被禁用、所有输出为 0。</p>
+</div></div>
+<div class="step"><div class="num">R4</div><div class="body">
+  <h4>放 4 个 寄存器（Register），各 8 位</h4>
+  <p><span class="path">存储器 → 寄存器（Memory → Register）</span> 放 4 个，每个 <code>数据位宽（Data Bits）=8</code>，<code>触发方式（Trigger）</code> 保持<strong>上升沿</strong>。建议各贴 <code>标签（Label）</code>：<code>reg0</code>、<code>reg2</code>、<code>reg3</code>、<code>reg9</code>。</p>
+</div></div>
+<div class="step"><div class="num">R5</div><div class="body">
+  <h4>接线：value→D，WR→时钟，译码器输出→写使能</h4>
+  <p>对这 4 个寄存器：<br>
+  • <code>value</code>(8-bit) 同时接到<strong>每个</strong>寄存器的 <code>D</code>（数据入）。一根总线分叉到 4 处即可。<br>
+  • <code>WR</code>(1-bit) 同时接到<strong>每个</strong>寄存器的<em>时钟脚</em>(▷)。<br>
+  • 译码器（Decoder）的<strong>第 0 路</strong>输出 → <code>reg0</code> 的<em>写使能</em>；<strong>第 2 路</strong> → <code>reg2</code>；<strong>第 3 路</strong> → <code>reg3</code>；<strong>第 9 路</strong> → <code>reg9</code>。（其余 12 路输出悬空不接。）<br>
+  • 每个寄存器（Register）的<em>清除</em>脚接一个 1 位、值为 0 的 常量（Constant）。不要让清除脚飘着；源码里 <code>CLR==1</code> 会异步清零，接 0 最稳。</p>
+  <div class="box" style="margin:8px 0 0"><div class="t" style="font-size:13px">为什么这样接就对</div><p style="margin:0;font-size:13.5px">WR 上升沿到来时，4 个寄存器都收到时钟边沿，但<em>只有写使能=1 的那个</em>会真正把 <code>value</code> 锁进去。译码器保证“同一时刻最多一路使能=1”（reg_id 选中谁，谁的使能才是 1）。于是 <code>reg_id=2, value=0xFD, 点一下 WR</code> ⇒ 只有 reg2 变成 0xFD。这正是 CPU <code>WRITE reg,val</code> 的硬件含义。</p></div>
+</div></div>
+<div class="step"><div class="num">R6</div><div class="body">
+  <h4>放 4 个输出 引脚（Pin），把寄存器值引出去</h4>
+  <p>再放 4 个 引脚（Pin），<code>类型（Type）=Output</code>、<code>数据位宽（Data Bits）=8</code>、标签 <code>reg0/reg2/reg3/reg9</code>，分别接到对应寄存器的 <code>Q</code>。这样 <code>RegFile</code> 作为子电路被实例化时，外面就能拿到这 4 个寄存器的当前值。保存文件。</p>
+</div></div>
+
+<div class="box tip"><div class="t">线太多？用 隧道（Tunnel）</div>
+<p style="margin-bottom:0"><code>value</code> 要分叉到 4 个 <code>D</code>、<code>WR</code> 要分叉到 4 个时钟——画起来容易乱。可用 <span class="path">线路 → 隧道（Wiring → Tunnel）</span>：给一根线起个名字（如 <code>VAL</code>），别处放同名 隧道（Tunnel）就等于连上了，<em>不用真的拉线</em>。§5 扩到 4 通道时这招能救命。</p></div>
+
+<!-- ===================== 3 ===================== -->
+<h2 id="s3"><span class="n">3</span><code>Channel_Pulse</code> 子电路：把寄存器值翻译成声音</h2>
+<p>这是本里程碑的主菜。输入是 4 个寄存器值（<code>reg0/reg2/reg3</code> + 本通道使能位），输出是蜂鸣器（Buzzer）的发声。结构和里程碑 1 的 <code>PulseOneShot</code> 一脉相承，只是 timer 不再手喂、而是从 <code>reg2/reg3</code> 拼出来，音量/占空比/使能也都从寄存器解出来。</p>
+
+<div class="box"><div class="t">Channel_Pulse 内部数据流</div>
+<pre>
+ reg3(8) ─[分线器:取低3位]─┐
+                          ├─[分线器:拼成11位]─► timer(11) ─► ROM[freq_pulse] ─► FREQ(14) ─┐
+ reg2(8) ─────────────────┘   (低8=reg2, 高3=reg3低3)        (11→14)                       │
+                                                                                            ├─► 蜂鸣器
+ reg0(8) ─[分线器]─┬─ 低4位[3:0] ──────────────────────────────────────► VOL(4) ───────────┤   Buzzer
+                   └─ 高2位[7:6] ─► ROM[duty 4项] ─► PW(8) ─────────────────────────────────┤  波形=Square
+ enable(1, =reg9 第0位) ───────────────────────────────────────────────► ENABLE(1) ────────┘
+</pre></div>
+
+<div class="step"><div class="num">C1</div><div class="body">
+  <h4>新建子电路 <code>Channel_Pulse</code>，放好 4 个输入 引脚（Pin）</h4>
+  <p><span class="path">项目 → 添加电路…（Project → Add Circuit…）</span> → <code>Channel_Pulse</code>，进入。放 4 个输入 引脚（Pin）：<code>reg0</code>(8)、<code>reg2</code>(8)、<code>reg3</code>(8)、<code>enable</code>(1)。（<code>enable</code> 是<em>本通道</em>的使能位，等会儿在外面接 <code>reg9</code> 的第 0 位。）</p>
+</div></div>
+
+<h3>3.1 拼出 11 位 timer（本里程碑的关键动作）</h3>
+<div class="step"><div class="num">C2</div><div class="body">
+  <h4>第一个 Splitter（分线器）：从 reg3 里取出低 3 位</h4>
+  <p>放一个 Splitter（分线器）。属性：<code>输入位宽（Bit Width In）=8</code>、<code>分支数（Fan Out）=2</code>。<br>
+  选中后属性表会列出 <code>Bit 0 … Bit 7</code> 各归到哪个分支：把 <strong>Bit 0、1、2 设为分支 0</strong>（这就是我们要的低 3 位），Bit 3–7 设为分支 1（丢弃不接）。<br>
+  把 <code>reg3</code> 接到 Splitter 的<em>合并端</em>（那一根 8 位侧）；分支 0 引出来就是 <code>reg3[2:0]</code>（3 位）。</p>
+</div></div>
+<div class="step"><div class="num">C3</div><div class="body">
+  <h4>第二个 Splitter（分线器）：把 reg2(8) + reg3低3(3) 拼成 timer(11)</h4>
+  <p>再放一个 Splitter（分线器），这次<strong>当“合并器”用</strong>。属性：<code>输入位宽（Bit Width In）=11</code>、<code>分支数（Fan Out）=2</code>。位分配：<strong>Bit 0–7 → 分支 0</strong>（低 8 位），<strong>Bit 8–10 → 分支 1</strong>（高 3 位）。<br>
+  接线：<code>reg2</code>(8 位) → 分支 0；上一步的 <code>reg3[2:0]</code>(3 位) → 分支 1。<em>合并端</em>引出的 11 位总线就是 <code>timer = (reg3[2:0]&lt;&lt;8) | reg2</code>。</p>
+  <div class="box warn" style="margin:8px 0 0"><div class="t" style="font-size:13px">位宽必须严丝合缝</div><p style="margin:0;font-size:13.5px">分支 0 必须正好 8 位、分支 1 正好 3 位，合起来 11 位。<strong>线是黑色（多位总线）才对，灰色 = 位宽没对上</strong>（里程碑 1 讲过）。Splitter 的方向/朝向若让接线别扭，调 <code>朝向（Facing）</code> 即可。</p></div>
+</div></div>
+
+<h3>3.2 timer → 频率（复用里程碑 1 的频率表）</h3>
+<div class="step"><div class="num">C4</div><div class="body">
+  <h4>放 freq_pulse ROM</h4>
+  <p><span class="path">存储器 → ROM（Memory → ROM）</span>。<strong>务必先设</strong> <code>地址位宽（Address Bit Width）=11</code>、<code>数据位宽（Data Bit Width）=14</code>，<em>再</em>右键 <span class="path">加载映像…（Load Image…）</span> → <span class="path">script/out/freq_pulse.txt</span>（对话框那行应是 <code>decoded 2048 of 2048 words, 14 bits each</code>；若显示 <code>256 / 8</code> 就是位宽没设，见里程碑 1 红框）。<br>
+  <code>timer</code>(11) → ROM 的 <code>A</code>。</p>
+</div></div>
+
+<h3>3.3 音量 / 占空比 / 使能（从 reg0、enable 解出来）</h3>
+<div class="step"><div class="num">C5</div><div class="body">
+  <h4>第三个 Splitter（分线器）：把 reg0 拆成音量位和占空比位</h4>
+  <p>放一个 Splitter（分线器）：<code>输入位宽（Bit Width In）=8</code>、<code>分支数（Fan Out）=3</code>。位分配：<strong>Bit 0–3 → 分支 0</strong>（音量，4 位）、Bit 4–5 → 分支 1（丢弃）、<strong>Bit 6–7 → 分支 2</strong>（占空比，2 位）。<code>reg0</code> 接合并端。</p>
+</div></div>
+<div class="step"><div class="num">C6</div><div class="body">
+  <h4>音量：reg0[3:0] → 蜂鸣器（Buzzer）的 VOL</h4>
+  <p>放 蜂鸣器（Buzzer）（<span class="path">输入/输出（扩展）→ 蜂鸣器（Input/Output Extra → Buzzer）</span>），<code>波形（Waveform）=Square（方波）</code>。把它的 <code>音量位宽（Volume Width）</code> 改成 <strong>4</strong>，然后把 reg0 分线器的<strong>分支 0（4 位音量）</strong>接到 VOL 脚。这样寄存器里 0–15 的音量直接生效（NES Pulse 音量本就是 4 位）。</p>
+</div></div>
+<div class="step"><div class="num">C7</div><div class="body">
+  <h4>占空比：reg0[7:6] → 4 项查找 → PW <span class="tag q">可后补</span></h4>
+  <p>NES 占空比 2 位选 4 档 {12.5%,25%,50%,75%}，对应蜂鸣器（Buzzer）8 位 PW 的 {32,64,128,192}={<code>0x20,0x40,0x80,0xc0</code>}。做一个 4 项查找 ROM：<br>
+  放一个 ROM，<code>地址位宽=2、数据位宽=8</code>，右键 <span class="path">编辑内容…（Edit Contents…）</span> 填 4 个值 <code>20 40 80 c0</code>。把 reg0 分线器的<strong>分支 2（2 位占空比）</strong>接 ROM 的 <code>A</code>，ROM 的 <code>D</code>(8) 接蜂鸣器（Buzzer）的 PW 脚。<br>
+  <em>想先简单点：</em>这一步可暂时跳过——PW 直接接一个 值=<code>0x80</code>(50%) 的 8 位 常量（Constant），等整条链路出声后再回来接占空比。</p>
+</div></div>
+<div class="step"><div class="num">C8</div><div class="body">
+  <h4>使能：enable → 蜂鸣器（Buzzer）的 ENABLE</h4>
+  <p>把输入 引脚（Pin）<code>enable</code>(1 位) 接到蜂鸣器（Buzzer）的 ENABLE 脚。<code>enable=1</code> 出声、<code>=0</code> 静音——这就是 <code>$4015</code> 声道开关的硬件落点。</p>
+</div></div>
+<div class="step"><div class="num">C9</div><div class="body">
+  <h4>FREQ 接好，存盘</h4>
+  <p>把 freq_pulse ROM 的 <code>D</code>(14 位) 接到蜂鸣器（Buzzer）的 FREQ 脚（两端都 14 位，黑线）。至此 <code>Channel_Pulse</code> 内部完工：4 个输入 引脚（Pin）进，一个蜂鸣器（Buzzer）出。保存文件。</p>
+</div></div>
+
+<!-- ===================== 4 ===================== -->
+<h2 id="s4"><span class="n">4</span>接线 &amp; 手动写寄存器，听 A4</h2>
+<p>现在把 <code>RegFile</code> 和 <code>Channel_Pulse</code> 拼起来测。找个空电路当“测试台”——可以直接用 <code>apu.circ</code> 自带的 <code>main</code>，双击进入它。</p>
+
+<div class="step"><div class="num">T1</div><div class="body">
+  <h4>实例化两个子电路</h4>
+  <p>在左侧浏览器里，<code>RegFile</code> 和 <code>Channel_Pulse</code> 现在像普通部件一样列着。各拖一个到 <code>main</code> 画布。</p>
+</div></div>
+<div class="step"><div class="num">T2</div><div class="body">
+  <h4>给 RegFile 的写口接上“手动 CPU”</h4>
+  <p>放输入 引脚（Pin）<code>reg_id</code>(4)、<code>value</code>(8) 接到 <code>RegFile</code> 对应输入；放一个 按钮（Button）（或 1 位 引脚（Pin））接 <code>WR</code>。</p>
+</div></div>
+<div class="step"><div class="num">T3</div><div class="body">
+  <h4>把寄存器值喂进 Channel_Pulse</h4>
+  <p><code>RegFile</code> 的输出 <code>reg0/reg2/reg3</code> 分别接到 <code>Channel_Pulse</code> 的 <code>reg0/reg2/reg3</code>。<br>
+  <code>enable</code> 怎么接？我们要的是 <code>reg9</code> 的<strong>第 0 位</strong>（Pulse1 使能）。放一个 Splitter（分线器）（<code>输入位宽=8、分支数=2</code>，Bit 0→分支 0，Bit 1–7→分支 1），<code>reg9</code> 进，分支 0（1 位）接 <code>Channel_Pulse.enable</code>。</p>
+</div></div>
+<div class="step"><div class="num">T4</div><div class="body">
+  <h4>开仿真，按 NES 协议手动写 4 个寄存器</h4>
+  <p>打开 <span class="path">仿真 → 自动传播（Simulate → Auto-Propagate）</span>（这一步<em>不需要</em>自动节拍（Auto-Tick），没有时钟）。切到 手形工具（Poke Tool）。<strong>每写一个寄存器 = 拨好 reg_id + value，点一下 WR</strong>：</p>
+  <table style="margin:6px 0">
+    <tr><th>要写的寄存器</th><th>reg_id</th><th>value</th><th>含义</th></tr>
+    <tr><td>$4002 timer 低 8</td><td><code>2</code></td><td><code>FD</code></td><td>timer 低 8 位 = 0xFD</td></tr>
+    <tr><td>$4003 timer 高 3</td><td><code>3</code></td><td><code>00</code></td><td>timer 高 3 位 = 0 ⇒ timer=253</td></tr>
+    <tr><td>$4000 占空比+音量</td><td><code>0</code></td><td><code>8F</code></td><td>占空比 50% + 音量 15(满)</td></tr>
+    <tr><td>$4015 声道使能</td><td><code>9</code></td><td><code>01</code></td><td>第 0 位=1 ⇒ Pulse1 开</td></tr>
+  </table>
+  <p>四笔写完，<code>timer=253</code> ⇒ <code>freq_pulse[253]=440Hz</code>，你应当听到<strong>稳定的 A4 方波</strong>。</p>
+</div></div>
+
+<div class="box good"><div class="t">判定标准（本里程碑的“出声”门槛）</div>
+<ul style="margin-bottom:0">
+  <li><strong>音高对</strong>：写 reg2/reg3 改 timer，验证“数值越小、音越高”（参考里程碑 1 的表：253→A4、190→D5、126→A5、63→A6；这里 reg2=低 8 位，timer&lt;256 时 reg3 都写 0）。</li>
+  <li><strong>音量可控</strong>：把 reg0 改成 <code>88</code>(音量 8)、<code>81</code>(音量 1)，音量随之变小；<code>80</code>(音量 0) 几乎无声。</li>
+  <li><strong>占空比可控</strong>（若接了 C7）：reg0 写 <code>0F/4F/8F/CF</code> ⇒ 12.5/25/50/75%，音色（明亮↔圆润）有变化。</li>
+  <li><strong>使能可控</strong>：reg9 写 <code>00</code> 立即静音、写 <code>01</code> 复响。</li>
+</ul>
+<p style="margin:8px 0 0">四条都过 = <em>寄存器协议 → 声音</em>这条链路打通。这是接 CPU 的前提（CPU 无非就是自动地、按曲谱去做你刚才手动做的那串“写 reg_id/value + WR”）。</p></div>
+
+<!-- ===================== 4.5 ===================== -->
+<h2 id="s45"><span class="n">4.5</span>★ 按帧采样门控：自动扫表/接 CPU 前的保护</h2>
+<div class="box warn"><div class="t">为什么现在就要加这道门</div>
+<p>§4 你是<em>用手</em>慢慢写寄存器，所以蜂鸣器（Buzzer）输入变化很慢、毫无压力。但一旦用计数器或 CPU 自动写寄存器，上游可能在很短时间内连续改 <code>reg2/reg3/reg0/reg9</code>。回顾里程碑 1 的命门：<strong>蜂鸣器（Buzzer）每次输入变化都会置 <code>updateRequired=true</code> 并重建音频缓冲</strong>（见 <code>ref/.../Buzzer.java</code> 的 <code>propagate()</code> 和后台线程）。如果把高速变化直接喂进去，必然爆音/卡死。<br>
+保护办法是把送进蜂鸣器（Buzzer）的值<strong>按音乐帧率（约 60Hz）采样保持</strong>：无论上游变多快，蜂鸣器（Buzzer）每秒只被更新几十次。它是本里程碑从“手测”过渡到“自动化”的保护层；等接 CPU 时，最好把这根采样脉冲换成 CPU 的“本帧写完/进入 WAIT”提交信号，而不是永远用一个自由跑的慢时钟。</p></div>
+
+<div class="step"><div class="num">G1</div><div class="body">
+  <h4>给 Channel_Pulse 增加一个输入 <code>frame_clk</code></h4>
+  <p>回到 <code>Channel_Pulse</code>，加一个输入 引脚（Pin）<code>frame_clk</code>(1 位)。它是“每帧一拍”的慢时钟，由外面送进来（下一步生成）。</p>
+</div></div>
+<div class="step"><div class="num">G2</div><div class="body">
+  <h4>在蜂鸣器（Buzzer）<em>前</em>插一排采样 寄存器（Register）</h4>
+  <p>把原本“直连蜂鸣器（Buzzer）”的 4 路信号，各经过一个 寄存器（Register） 再进蜂鸣器（Buzzer）：<br>
+  • FREQ：14 位 寄存器（Register）；&nbsp; • VOL：4 位；&nbsp; • PW：8 位；&nbsp; • ENABLE：1 位。<br>
+  每个采样 寄存器（Register）：<code>D</code> 接原信号、<code>Q</code> 接蜂鸣器（Buzzer）对应脚、<strong>时钟脚统一接 <code>frame_clk</code></strong>、写使能接 1 位常量 1、清除脚接 1 位常量 0。于是蜂鸣器（Buzzer）只在 <code>frame_clk</code> 上升沿才看到新值。</p>
+  <div class="box" style="margin:8px 0 0"><div class="t" style="font-size:13px">至少把 FREQ 锁住</div><p style="margin:0;font-size:13.5px">嫌 4 个寄存器多，<em>最低限度</em>给 FREQ 加采样保持即可（频率变化是爆音主因）。但 4 路都锁最稳，推荐全锁。</p></div>
+</div></div>
+<div class="step"><div class="num">G3</div><div class="body">
+  <h4>在测试台生成 ~60Hz 的 frame_clk（复用里程碑 1 的分频招式）</h4>
+  <p>回到 <code>main</code>。放 时钟（Clock） + 计数器（Counter），时钟（Clock）接计数器（Counter）；用 Splitter（分线器）<strong>取计数器（Counter）的某一位</strong>当 <code>frame_clk</code>，接到 <code>Channel_Pulse.frame_clk</code>。<br>
+  这里用的是 Logisim 左上角显示的<strong>完整周期/s</strong>，不是菜单里的半周期 tick 数；状态栏源码 <code>TickCounter.java</code> 会把菜单频率除以 2 来显示。采样 寄存器（Register）看的是 <code>frame_clk</code> 的上升沿，所以若取 <code>Counter[n]</code>，采样率约为 <code>左上角显示值 / 2^(n+1)</code>。推荐直接照表接：</p>
+  <table style="margin:6px 0">
+    <tr><th>自动节拍频率（Auto-Tick Frequency）</th><th>左上角约显示</th><th>取哪一位作 frame_clk</th><th>采样率</th></tr>
+    <tr><td>1000Hz</td><td>500Hz</td><td><code>Counter[2]</code></td><td>500/8 = 62.5Hz</td></tr>
+    <tr><td>2kHz</td><td>1000Hz</td><td><code>Counter[3]</code></td><td>1000/16 = 62.5Hz</td></tr>
+    <tr><td>4kHz</td><td>2000Hz</td><td><code>Counter[4]</code></td><td>2000/32 = 62.5Hz</td></tr>
+  </table>
+  <p>建议先用 <strong>2kHz + <code>Counter[3]</code></strong>。如果界面里 2kHz 不卡，就不要再调。这个接法和里程碑 1 的“取高位扫表”是同一个思想，只是这里取的是一个单 bit 慢脉冲，而不是 11 位 ROM 地址。</p>
+</div></div>
+<div class="step"><div class="num">G4</div><div class="body">
+  <h4>开 自动节拍（Auto-Tick）重测</h4>
+  <p>这次必须勾选 <span class="path">仿真 → 启用自动节拍（Simulate → Auto-Tick Enabled）</span>，并按上表设置 <span class="path">仿真 → 自动节拍频率（Simulate → Auto-Tick Frequency）</span>（否则 <code>frame_clk</code> 不跳、采样 寄存器（Register） 永不更新、蜂鸣器（Buzzer）<em>不出声</em>）。重做 §4 的写寄存器操作：声音应当照常正确，且改 timer/音量时<em>干净不爆</em>。</p>
+</div></div>
+
+<div class="box tip"><div class="t">接了 CPU 之后这道门会怎样</div>
+<p style="margin-bottom:0">下一里程碑 CPU 用 <code>WAIT</code> 让 PC 停顿，把写寄存器的节奏天然压到音乐帧率（~60Hz）。但同一帧开头可能连续写好几个寄存器（比如先写 timer 低位、再写高位、再写音量），所以自由跑的 <code>frame_clk</code> 有概率采到“半更新”的组合。最终接 CPU 时，最佳做法是让 CPU 在一帧写完、开始执行 <code>WAIT</code> 时给 APU 一个 <code>frame_commit</code> 脉冲，并把它接到这里的 <code>frame_clk</code>。在本里程碑手测阶段，先用上面的分频慢时钟即可。</p></div>
+
+<!-- ===================== 5 ===================== -->
+<h2 id="s5"><span class="n">5</span>扩展成 4 通道 + 封装 <code>APU</code> 子电路</h2>
+<p>单通道验证通过后，剩下的基本是<strong>复制 + 改几个参数</strong>。先把 <code>RegFile</code> 补全到 4 通道要用的寄存器，再造另外 3 个通道子电路，最后封一个 <code>APU</code> 顶层。</p>
+
+<div class="step"><div class="num">P1</div><div class="body">
+  <h4>把 RegFile 补全到所需寄存器</h4>
+  <p>回 <code>RegFile</code>，按同样方式补上其余寄存器并引出 <code>Q</code>：Pulse2 用 <code>reg4/reg6/reg7</code>、Triangle 用 <code>reg8/reg10/reg11</code>、Noise 用 <code>reg12/reg14</code>（<code>reg9</code> 已有，作全局使能）。译码器（Decoder）对应输出路接到各自寄存器的写使能即可。<em>这里强烈建议用 隧道（Tunnel）按名字布线，否则线会爆炸。</em></p>
+</div></div>
+<div class="step"><div class="num">P2</div><div class="body">
+  <h4>造 Channel_Triangle / Channel_Noise（照 Channel_Pulse 改）</h4>
+  <p>复制 <code>Channel_Pulse</code> 的思路，按下表改动：</p>
+  <table style="margin:6px 0">
+    <tr><th>通道</th><th>波形（Waveform）</th><th>频率来源</th><th>音量 / 占空比</th><th>使能位</th></tr>
+    <tr><td><code>Channel_Pulse</code>(P1)</td><td>方波 Square</td><td>reg2+reg3低3 → <code>freq_pulse</code>(addr11)</td><td>VOL=reg0[3:0]；PW=reg0[7:6]查表</td><td>reg9[0]</td></tr>
+    <tr><td>Pulse2（再实例化一个 Channel_Pulse）</td><td>方波 Square</td><td>reg6+reg7低3 → <code>freq_pulse</code></td><td>VOL=reg4[3:0]；PW=reg4[7:6]</td><td>reg9[1]</td></tr>
+    <tr><td><code>Channel_Triangle</code></td><td>三角波 Triangle</td><td>reg10+reg11低3 → <code>freq_triangle</code>(addr11)</td><td><strong>无音量寄存器</strong>→VOL 接常量；无占空比</td><td>reg9[2]</td></tr>
+    <tr><td><code>Channel_Noise</code></td><td>白噪声 White noise</td><td><strong>reg14[3:0]</strong> → <code>freq_noise</code>(<strong>addr4</strong>)</td><td>VOL=reg12[3:0]；无占空比</td><td>reg9[3]</td></tr>
+  </table>
+  <p>注意 Noise 的频率表是 <strong>16 项、地址 4 位</strong>（<code>freq_noise.txt</code>，<code>地址位宽=4、数据位宽=14</code>），且 timer 不用拼接，直接拿 <code>reg14</code> 低 4 位当索引。Triangle 没有音量寄存器，VOL 给个固定值即可（响不响由使能管）。三者都保留 §4.5 的 <code>frame_clk</code> 采样门。</p>
+</div></div>
+<div class="step"><div class="num">P3</div><div class="body">
+  <h4>封 <code>APU</code> 顶层子电路</h4>
+  <p>新建子电路 <code>APU</code>：对外只暴露 CPU 关心的写口 <code>reg_id(4) / value(8) / WR(1)</code> + <code>frame_clk(1)</code>（以后可由 CPU 的 <code>frame_commit</code> 驱动；外加可选的总静音/复位）。内部：一个 <code>RegFile</code> + 4 个通道子电路。<br>
+  用一个 Splitter（分线器）把 <code>reg9</code> 拆成 4 个使能位，分别接 4 个通道的 <code>enable</code>（reg9[0..3] = P1/P2/Tri/Noise）。各通道的寄存器值从 <code>RegFile</code> 的对应输出接入（隧道（Tunnel）布线）。<br>
+  4 个蜂鸣器（Buzzer）并联发声——系统声卡会自动混音（里程碑 1 已验证多蜂鸣器（Buzzer）可同响）。</p>
+</div></div>
+
+<div class="box warn"><div class="t">4 路是目标，但单 Pulse 才是本里程碑硬门槛</div>
+<p style="margin-bottom:0">源码和详细计划都支持 4 个蜂鸣器（Buzzer）并联，但它们各自开音频线程/Clip，真实机器上仍可能受声卡或 Java 音频后端影响。若 4 路同时开有卡顿，先保 <code>Channel_Pulse</code> + <code>APU</code> 写口正确，再降级到 2 Pulse 或 2 Pulse + Triangle 演示；不要为了 4 路音色拖垮后面的 CPU 里程碑。</p></div>
+
+<div class="box good"><div class="t">手动测 4 路和声</div>
+<p style="margin-bottom:0">在测试台实例化 <code>APU</code>，按 §4.5 的表开启 自动节拍（Auto-Tick）并接好 <code>frame_clk</code>。手写几组寄存器：给 Pulse1/Pulse2/Triangle 各写一个不同 timer、<code>reg9=0x07</code>（开前三路）——应当听到<strong>三个音叠成的和弦</strong>。再写 <code>reg9=0x00</code> 应当整体静音。能出和声 = APU 骨架成立；若多路卡顿，记录为性能风险，先保单 Pulse 正确。</p></div>
+
+<!-- ===================== 6 ===================== -->
+<h2 id="s6"><span class="n">6</span>里程碑 2 验收清单</h2>
+<ul class="chk">
+  <li><code>RegFile</code> 子电路：<code>reg_id/value/WR</code> 写口 + 译码器（Decoder）+ 寄存器（Register）组，<strong>写哪个寄存器只动哪个</strong>（手测确认）。</li>
+  <li><code>Channel_Pulse</code> 子电路：用两个 Splitter（分线器）把 <code>reg2 + reg3低3</code> 拼成 11 位 timer，经 <code>freq_pulse</code> ROM 出 A4。</li>
+  <li>音量（reg0[3:0]）、占空比（reg0[7:6]，可后补）、使能（reg9[0]）均可控。</li>
+  <li>§4.5 的 <code>frame_clk</code> 按帧采样门已加：按推荐表取 Counter 位时声音干净不爆；并知道接 CPU 后应优先改接 <code>frame_commit</code>。</li>
+  <li>（扩展）4 个通道 + <code>APU</code> 顶层封好，能手动写出三音和弦、能整体静音。</li>
+  <li>全程<strong>无红线 / 无灰线</strong>；已存盘并备份 <code>apu_m2.circ</code>。</li>
+</ul>
+
+<div class="box good"><div class="t">做完这一步，你已经具备了什么</div>
+<p style="margin-bottom:0">一个<strong>用 NES 寄存器协议驱动</strong>的 APU：外界只要按 <code>reg_id/value/WR</code> 往里写字节，它就发声。这意味着——<em>只要再有一个会自动“吐 WRITE/WAIT/END”的东西，音乐就播起来了</em>。那个东西就是 CPU，正是下一里程碑。</p></div>
+
+<!-- ===================== 7 ===================== -->
+<h2 id="s7"><span class="n">7</span>下一里程碑预告</h2>
+<p><strong>里程碑 3 = 搭 CPU（<code>cpu.circ</code>）并接上本里程碑的 APU</strong>：单周期五段（IF/ID/EX/MEM/WB）+ <code>WAIT</code> 停顿状态机 + 取指/译码 <code>WRITE/END</code>，把 <code>track00.txt</code> 那条 16 位指令流跑起来，自动产生你刚才手动做的那串“写 reg_id/value + WR”。届时 CPU 的 <code>WAIT</code> 停顿会接管音乐帧率，§4.5 的采样门退居二线。<strong>唯一的正确性陷阱是 <code>WAIT</code> 的 busy 状态机</strong>（见 <span class="path">plan/detailed_plan.html</span> §5），到时单开一份文档细讲。</p>
+
+<footer>
+  Milestone 2 of N · 依据：Logisim Evolution v4.1.0 源码（Register/Decoder/Splitter/Buzzer 端口与属性，i18n 中英术语均按 key 核实）· 资产：script/out/freq_pulse.txt、freq_triangle.txt、freq_noise.txt · 配套：plan/milestone1_guide.html、plan/detailed_plan.html（§4 位宽表、§6 APU 设计）
+</footer>
+
+</div>
+</body>
+</html>
