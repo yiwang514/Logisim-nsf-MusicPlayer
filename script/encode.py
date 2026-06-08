@@ -46,6 +46,12 @@ PERIOD_LO = {0x4002, 0x4006, 0x400A}
 PERIOD_HI = {0x4003, 0x4007, 0x400B}
 DMC_RANGE = range(0x4010, 0x4014)
 
+# 节流(throttle)用：周期寄存器 -> 通道号；音量寄存器集合。
+PERIOD_LO_CH = {0x4002: 0, 0x4006: 1, 0x400A: 2}   # Pulse1/2/Triangle 的 timer 低字节
+PERIOD_HI_CH = {0x4003: 0, 0x4007: 1, 0x400B: 2}   # timer 高 3 位
+VOL_REGS = {0x4000, 0x4004, 0x400C}                # 低4位=音量；脉冲高4位=占空比/标志
+NOISE_PERIOD = 0x400E
+
 # 寄存器 -> 4-bit reg_id 的映射；返回 None 表示丢弃该写入
 def map_reg(addr):
     if addr == 0x4015:
@@ -77,6 +83,55 @@ def parse_log(path):
                 continue
             events.append((frame, addr, value))
     return events
+
+
+def throttle(events, freq_deadband=0, vol_deadband=0, max_update_hz=0):
+    """颤音/包络节流：减少喂给 Buzzer 的「每帧微小变化」，从而压制 Buzzer 每次输入变化
+    就重开 Clip 造成的 ~60Hz 爆破（见 ref/.../io/extra/Buzzer.java：propagate 一变就
+    updateRequired=true，后台线程随即关旧 Clip、开新 Clip）。这是纯过滤器：丢掉「变化
+    太小 / 太频繁」的写入；on/off（音量进出 0）与占空比变化始终保留，所以音不会断。
+      freq_deadband K —— 通道 11 位 timer 相对上次「已发出」值变化 <=K 就丢（杀小颤音）。
+      vol_deadband  K —— 音量低 4 位变化 <=K（且占空比不变、且非 0 进出）就丢（压音量包络）。
+      max_update_hz H —— 每个调制寄存器每秒最多变 H 次（最小间隔 60/H 帧）。
+    三个都为 0 时原样返回（默认行为不变）。拿表现力换平滑，逐曲可调。"""
+    if not (freq_deadband or vol_deadband or max_update_hz):
+        return events
+    min_gap = (60.0 / max_update_hz) if max_update_hz > 0 else 0.0
+    mod_regs = set(PERIOD_LO_CH) | set(PERIOD_HI_CH) | VOL_REGS | {NOISE_PERIOD}
+    raw_lo, raw_hi = {}, {}             # 各通道最新「原始」周期字节（跟踪曲子真实意图）
+    emit_timer, emit_vol, emit_duty = {}, {}, {}   # 各通道/寄存器「已发出」的值
+    last_frame = {}                     # 每个寄存器上次发出的帧（限速用）
+    out = []
+    for frame, addr, value in events:
+        keep = True
+        cand = None
+        if addr in PERIOD_LO_CH or addr in PERIOD_HI_CH:
+            if addr in PERIOD_LO_CH:
+                ch = PERIOD_LO_CH[addr]; raw_lo[ch] = value & 0xFF
+            else:
+                ch = PERIOD_HI_CH[addr]; raw_hi[ch] = value & 0x07
+            timer = ((raw_hi.get(ch, 0) & 0x07) << 8) | (raw_lo.get(ch, 0) & 0xFF)
+            if freq_deadband > 0 and ch in emit_timer and abs(timer - emit_timer[ch]) <= freq_deadband:
+                keep = False
+            cand = ("t", ch, timer)
+        elif addr in VOL_REGS:
+            vol, duty = value & 0x0F, value & 0xF0
+            if (vol_deadband > 0 and addr in emit_vol and emit_duty.get(addr) == duty
+                    and abs(vol - emit_vol[addr]) <= vol_deadband and vol != 0 and emit_vol[addr] != 0):
+                keep = False
+            cand = ("v", addr, vol, duty)
+        if keep and min_gap > 0 and addr in mod_regs:
+            lf = last_frame.get(addr)
+            if lf is not None and (frame - lf) < min_gap:
+                keep = False
+        if keep:
+            out.append((frame, addr, value))
+            last_frame[addr] = frame
+            if cand and cand[0] == "t":
+                emit_timer[cand[1]] = cand[2]
+            elif cand and cand[0] == "v":
+                emit_vol[cand[1]] = cand[2]; emit_duty[cand[1]] = cand[3]
+    return out
 
 
 def scale_period_value(addr, value, channel_period, period_scale):
@@ -186,12 +241,30 @@ def main(argv=None):
                     help="音高缩放（默认 1.0，Buzzer 用真实 Hz 时不要改）")
     ap.add_argument("--dedup", action="store_true",
                     help="跳过与上次相同值的寄存器写（缩小 ROM，音乐无损）")
+    ap.add_argument("--freq-deadband", type=int, default=0,
+                    help="颤音死区：通道 timer 变化<=该值就丢，减少 Buzzer 爆破（0=关；试 2~4）")
+    ap.add_argument("--vol-deadband", type=int, default=0,
+                    help="音量死区：音量低4位变化<=该值就丢，压音量包络（0=关；试 3~6）")
+    ap.add_argument("--vol-hold", action="store_true",
+                    help="保持音量（等价 --vol-deadband 16，只留 on/off 与占空比变化）")
+    ap.add_argument("--max-update-hz", type=float, default=0,
+                    help="每个调制寄存器每秒最多变化次数（限速；0=关）")
     ap.add_argument("--max-frames", type=int, default=0)
     args = ap.parse_args(argv)
 
     events = parse_log(args.input)
     if args.max_frames > 0:
         events = [e for e in events if e[0] < args.max_frames]
+
+    n_raw = len(events)
+    vol_db = 16 if args.vol_hold else args.vol_deadband
+    events = throttle(events, freq_deadband=args.freq_deadband,
+                      vol_deadband=vol_db, max_update_hz=args.max_update_hz)
+    if len(events) != n_raw:
+        print("throttle: %d -> %d events (丢 %d, %.0f%%)  [freq_db=%d vol_db=%d max_hz=%s]"
+              % (n_raw, len(events), n_raw - len(events),
+                 100.0 * (n_raw - len(events)) / max(1, n_raw),
+                 args.freq_deadband, vol_db, args.max_update_hz or "off"))
 
     words, overruns = encode(events,
                              frame_cycles=args.frame_cycles,

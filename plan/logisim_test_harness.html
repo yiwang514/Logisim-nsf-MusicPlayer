@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logisim 无界面点测环境 · 事实速查 &amp; 用法（自动验证手写 .circ）</title>
+<style>
+  :root{
+    --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
+    --line:rgba(80,60,40,.14); --text:#2d2520; --dim:#6a5a4c; --mute:#9a8a78;
+    --accent:#a8410d; --cyan:#2c6770; --red:#8b2820; --green:#4d6b2a; --purple:#5e3677;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+       font-family:"Segoe UI","Noto Sans SC",system-ui,sans-serif;font-size:15px;line-height:1.78;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 40px 120px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:22px;margin-bottom:10px}
+  h1{font-size:27px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  h1 .sub{display:block;font-size:15px;color:var(--dim);font-weight:400;margin-top:8px}
+  .meta{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--mute);
+        letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:21px;margin:42px 0 12px;padding-top:10px;border-top:1px solid var(--line);
+     color:var(--accent)}
+  h2 .n{font-family:"JetBrains Mono",monospace;font-size:13px;color:#fff;background:var(--accent);
+        padding:2px 9px;border-radius:4px;margin-right:10px}
+  h3{font-size:16px;margin:22px 0 8px}
+  p{margin:9px 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.85em;background:var(--deep);
+       padding:1px 6px;border-radius:3px;color:var(--accent)}
+  strong{color:var(--accent)} em{color:var(--cyan);font-style:normal;font-weight:600}
+  ul,ol{margin:9px 0 14px 22px} li{margin-bottom:6px}
+  .path{font-family:"JetBrains Mono",monospace;font-size:.85em;color:var(--purple);font-weight:600}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  pre{background:#fffdf8;border:1px solid var(--line);border-left:3px solid var(--cyan);
+      padding:14px 18px;margin:14px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;
+      line-height:1.55;overflow-x:auto;border-radius:0 6px 6px 0;color:var(--text)}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+       padding:13px 19px;margin:14px 0;border-radius:0 6px 6px 0}
+  .box.warn{border-left-color:var(--red);background:rgba(139,40,32,.03)}
+  .box.good{border-left-color:var(--green);background:rgba(77,107,42,.045)}
+  .box.tip{border-left-color:var(--purple);background:rgba(94,54,119,.04)}
+  .box .t{font-weight:700;margin-bottom:5px;color:var(--cyan)}
+  .box.warn .t{color:var(--red)} .box.good .t{color:var(--green)} .box.tip .t{color:var(--purple)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 22px;margin:18px 0}
+  .toc ol{margin:0;list-style:none;columns:2;column-gap:30px}
+  .toc a{color:var(--text);text-decoration:none} .toc a:hover{color:var(--accent)}
+  .toc .n{color:var(--accent);font-family:"JetBrains Mono",monospace;margin-right:7px}
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--mute);
+         font-family:"JetBrains Mono",monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="meta">Tooling Reference · 无界面点测环境 · Logisim-evolution</div>
+  <h1>Logisim 无界面点测环境 —— 自动验证 / 仿真手写 <code>.circ</code>
+    <span class="sub">因为我们开始<strong>直接以 XML 形式手写 <code>.circ</code> 电路</strong>（CPU 等），需要一种<em>不开 GUI</em> 就能「验证它能否被 Logisim 正确加载」「按时钟跑一段、看输出引脚」的办法。本文把这套环境的<strong>事实、命令、坑、以及一个已跑通的样例</strong>记下来，供随时复用。所有结论均在本机实测过。</span>
+  </h1>
+</header>
+
+<div class="box good">
+  <div class="t">一句话</div>
+  <p style="margin-bottom:0">把 <span class="path">ref/logisim-evolution</span> 这个 Gradle 工程编译成一个独立 jar，用它的<strong>无界面（headless）模式</strong>:<code>--tty stats</code> 验证电路能否加载、<code>--tty table</code> 按时钟步进打印输出引脚。于是手写 <code>.circ</code> 不再是「盲搭交给人点」,而是<strong>写 → 验证 → 仿真</strong>的闭环。已用一个手写的 时钟（Clock）+计数器（Counter）电路跑通:它正确地数 0→8 并在 8 停住。</p>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><span class="n">1</span><a href="#s1">构建 jar（一次性）</a></li>
+    <li><span class="n">2</span><a href="#s2">三种无界面能力</a></li>
+    <li><span class="n">3</span><a href="#s3">注意事项 / 已知坑</a></li>
+    <li><span class="n">4</span><a href="#s4">已跑通的样例（可当模板）</a></li>
+    <li><span class="n">5</span><a href="#s5"><code>.circ</code> XML 速查</a></li>
+    <li><span class="n">6</span><a href="#s6">验证工作流 &amp; 测试台配方</a></li>
+  </ol>
+</div>
+
+<!-- ===== 1 ===== -->
+<h2 id="s1"><span class="n">1</span>构建 jar（一次性）</h2>
+<table>
+  <tr><th>项</th><th>事实（本机实测）</th></tr>
+  <tr><td>命令</td><td><code>cd ref/logisim-evolution &amp;&amp; ./gradlew shadowJar -x test</code></td></tr>
+  <tr><td>产物</td><td><span class="path">ref/logisim-evolution/build/libs/logisim-evolution-4.2.0dev-all.jar</span>（约 53MB 胖 jar，含全部依赖）</td></tr>
+  <tr><td>主类</td><td><code>com.cburch.logisim.Main</code></td></tr>
+  <tr><td>JDK</td><td>本机 <strong>JDK 25（Liberica）可用</strong>;工程目标字节码 Java 21（<code>build.gradle.kts</code> 的 <code>sourceCompatibility=VERSION_21</code>）。用更高 JDK 跑也行。</td></tr>
+  <tr><td>Gradle</td><td>wrapper 自带 <strong>9.5.1</strong>，首次会自动下载发行包（~150MB）。</td></tr>
+  <tr><td>首次耗时</td><td>≈ 6 分钟（下 Gradle + 拉依赖 + 编译约千个文件）。之后增量很快。</td></tr>
+  <tr><td>git</td><td><span class="path">ref/</span> 与 <code>build/</code> 都被 git 忽略 —— jar 留在本地、不入库;丢了就按上面重编。</td></tr>
+</table>
+<div class="box tip"><div class="t">版本差异（不影响）</div>
+<p style="margin-bottom:0">vendored 的 ref 仓库是 <code>4.2.0dev</code>，比你本机的 <strong>4.1.0</strong> 略新，但 <code>.circ</code> 格式同代、向后兼容（已实测它能正确加载你的 <code>apu.circ</code>）。<strong>我们手写的 <code>.circ</code> 一律写 <code>source="4.1.0"</code> 且只用你 <code>apu.circ</code> 里出现过的标准组件/属性</strong>，所以这个 jar 能验证、你本机 4.1.0 也能照常打开。</p></div>
+
+<!-- ===== 2 ===== -->
+<h2 id="s2"><span class="n">2</span>三种无界面能力</h2>
+<p>统一前缀（务必带 headless 开关）:<code>java -Djava.awt.headless=true -jar &lt;jar&gt; …</code></p>
+<table>
+  <tr><th>用途</th><th>命令</th><th>行为 / 判读</th></tr>
+  <tr>
+    <td><strong>加载校验</strong><br>(最常用)</td>
+    <td><code>--tty stats &lt;file.circ&gt;</code></td>
+    <td>把电路<em>加载进来</em>并打印各组件计数。<strong>能打印 + 退出码 0 = XML 合法、组件都被认得</strong>;若有非法 XML / 不认识的组件 / 属性，会报错或丢组件。手写后第一关就跑它。</td>
+  </tr>
+  <tr>
+    <td><strong>时序仿真</strong></td>
+    <td><code>--tty table &lt;file.circ&gt;</code></td>
+    <td>真按时钟跑:每轮 <code>toggleClocks()</code>+传播（=半个时钟周期一行），打印所有<em>输出</em>引脚的值。<strong>只有当存在一个标签恰为 <code>halt</code> 的输出引脚、且它变 1 时才停</strong>（或检测到振荡）。详见 §6。</td>
+  </tr>
+  <tr>
+    <td><strong>真值表</strong><br>(组合逻辑)</td>
+    <td><code>--test-vector &lt;电路名&gt; &lt;向量文件&gt;</code></td>
+    <td>对指定子电路施加各路输入组合、比对输出，返回 0/1。适合单测<em>组合</em>模块(译码器、以后的 ALU)。</td>
+  </tr>
+</table>
+<div class="box"><div class="t"><code>--tty</code> 的格式字（可逗号组合）</div>
+<p style="margin-bottom:0">合法值（来自源码报错信息核实）:<code>halt, speed, stats, table, tty, binary, hex, csv, tabs</code>。<br>
+<strong>重要细节</strong>:<code>hex / csv / tabs / binary</code> 这些「排版」只对<em>组合真值表</em>那条路（无 <code>halt</code> 引脚时）生效;而带 <code>halt</code> 引脚的<strong>时序仿真路，输出永远按二进制打印</strong>（<code>Value.toString()</code>，忽略引脚 radix）。所以 16 位 PC 会显示成 16 个 0/1 —— 想好认，可只引出低几位、或并行引出一个窄信号观察。</p></div>
+
+<!-- ===== 3 ===== -->
+<h2 id="s3"><span class="n">3</span>注意事项 / 已知坑</h2>
+<ul>
+  <li><strong>必须 <code>-Djava.awt.headless=true</code></strong>:否则可能弹窗;但带它之后，<em>只有</em>真正无窗口的路（<code>--tty</code>、<code>--test-vector</code>）能用。</li>
+  <li><strong><code>--new-file-format in out</code>（加载再另存）不可用于 headless</strong>:它内部建 Swing 窗口，<code>-Djava.awt.headless=true</code> 下抛 <code>HeadlessException</code>。要「验证能否加载」请用 <code>--tty stats</code>。</li>
+  <li><strong>控制台中文乱码</strong>:Windows 控制台代码页会把中文组件名/报错打成乱码（如 <code>计数器</code>→乱码）。对<em>数字型</em> TTY 表格和 ASCII 报错无影响;要看清中文可设 UTF-8（<code>chcp 65001</code> 或 <code>-Dstdout.encoding=UTF-8</code>）。</li>
+  <li><strong>错误信息看退出码 + stderr</strong>:加载失败通常在 stderr 有 <code>ERROR …Startup</code> 行;成功的 <code>--tty stats</code> 退出码 0。</li>
+</ul>
+
+<!-- ===== 4 ===== -->
+<h2 id="s4"><span class="n">4</span>已跑通的样例（可当手写模板）</h2>
+<p>下面这个电路是<strong>从零手写</strong>的:时钟（Clock）→ 计数器（Counter，4 位，<code>max=8</code>、到顶保持），<code>count</code> 引出计数值、<code>halt</code> 引出进位（Carry）。它验证了「文件骨架 / 组件写法 / 计数器端口坐标 / 连线」全对。</p>
+<pre>&lt;comp lib="0" loc="(210,220)" name="Clock"&gt;
+  &lt;a name="appearance" val="NewPins"/&gt;
+  &lt;a name="facing" val="north"/&gt;
+&lt;/comp&gt;
+&lt;comp lib="5" loc="(340,160)" name="Counter"&gt;
+  &lt;a name="appearance" val="logisim_evolution"/&gt;
+  &lt;a name="max" val="0x8"/&gt;
+  &lt;a name="ongoal" val="stay"/&gt;
+  &lt;a name="width" val="4"/&gt;
+&lt;/comp&gt;
+&lt;comp lib="0" loc="(590,270)" name="Pin"&gt;          &lt;!-- 输出:计数值 --&gt;
+  &lt;a name="facing" val="west"/&gt; &lt;a name="label" val="count"/&gt;
+  &lt;a name="type" val="output"/&gt; &lt;a name="width" val="4"/&gt;
+&lt;/comp&gt;
+&lt;comp lib="0" loc="(590,210)" name="Pin"&gt;          &lt;!-- 输出:halt(=Carry) --&gt;
+  &lt;a name="facing" val="west"/&gt; &lt;a name="label" val="halt"/&gt; &lt;a name="type" val="output"/&gt;
+&lt;/comp&gt;
+&lt;wire from="(210,210)" to="(210,220)"/&gt;   &lt;!-- 时钟输出 --&gt;
+&lt;wire from="(210,210)" to="(250,210)"/&gt;
+&lt;wire from="(250,210)" to="(250,240)"/&gt;
+&lt;wire from="(250,240)" to="(340,240)"/&gt;   &lt;!-- → 计数器时钟脚 CK=(340,240) --&gt;
+&lt;wire from="(530,270)" to="(590,270)"/&gt;   &lt;!-- 计数器 Q=(530,270) → count --&gt;
+&lt;wire from="(530,210)" to="(590,210)"/&gt;   &lt;!-- 计数器 Carry=(530,210) → halt --&gt;</pre>
+<p>命令与输出（实测）:</p>
+<pre>$ java -Djava.awt.headless=true -jar &lt;jar&gt; --tty table  build/probe.circ
+0000
+0001
+0010
+0011
+0100
+0101
+0110
+0111
+1000          ← count=8(=max),Carry=1 → halt 触发,正常停止(退出码 0)</pre>
+<p style="margin-bottom:0">完整文件在 <span class="path">ref/logisim-evolution/build/probe.circ</span>（git 忽略）。注意:计数器只接了时钟,<em>计数使能/方向脚悬空</em> —— 源码里这两脚「非 FALSE 即真」,所以默认就是「使能、向上」。</p>
+
+<!-- ===== 5 ===== -->
+<h2 id="s5"><span class="n">5</span><code>.circ</code> XML 速查（手写依据）</h2>
+
+<h3>5.1 文件骨架</h3>
+<p>顶部是 <code>&lt;project&gt;</code> + 一串 <code>&lt;lib&gt;</code> 声明（给每个库一个编号）+ <code>&lt;main&gt;</code> + <code>&lt;options&gt;</code>，然后每个电路一个 <code>&lt;circuit name="…"&gt;</code>。直接照搬现有 <code>apu.circ</code>/<code>cpu.circ</code> 的头最稳。</p>
+
+<h3>5.2 库编号（<code>comp</code> 的 <code>lib</code> 属性 → 用哪个库）</h3>
+<table>
+  <tr><th>lib</th><th>库</th><th>本项目常用组件</th></tr>
+  <tr><td><code>0</code></td><td>Wiring 线路</td><td>Pin 引脚、Clock 时钟、Constant 常量、Splitter 分线器、Tunnel 隧道、Bit Extender 位扩展器、Probe 探针</td></tr>
+  <tr><td><code>1</code></td><td>Gates 逻辑门</td><td>AND/OR/NOT/NAND/NOR/XOR Gate</td></tr>
+  <tr><td><code>2</code></td><td>Plexers 复用器</td><td>Decoder 译码器、Multiplexer 多路复用器</td></tr>
+  <tr><td><code>3</code></td><td>Arithmetic 算术</td><td>Adder 加法器、Subtractor 减法器、Comparator 比较器（以后 ALU 用）</td></tr>
+  <tr><td><code>5</code></td><td>Memory 存储器</td><td>ROM、RAM、Register 寄存器、Counter 计数器、D Flip-Flop</td></tr>
+  <tr><td><code>6</code></td><td>I/O</td><td>Button 按钮</td></tr>
+  <tr><td><code>11</code></td><td>Input/Output-Extra</td><td>Buzzer 蜂鸣器</td></tr>
+</table>
+
+<h3>5.3 三种基本元素</h3>
+<pre>&lt;comp lib="5" loc="(x,y)" name="Counter"&gt;   &lt;!-- 组件:库号 + 锚点坐标 + 组件名 --&gt;
+  &lt;a name="属性名" val="值"/&gt; …               &lt;!-- 属性只在“非默认”时才需要写 --&gt;
+&lt;/comp&gt;
+&lt;wire from="(x1,y1)" to="(x2,y2)"/&gt;          &lt;!-- 导线:必须严格水平或垂直 --&gt;</pre>
+<ul>
+  <li><strong>坐标在 10 像素网格上</strong>;组件的「端口」= 锚点 <code>loc</code> + 固定偏移。两个端点重合（或被同一根 wire 连）即电气相连。</li>
+  <li><strong>输出 引脚（Pin）</strong>:<code>&lt;a name="type" val="output"/&gt;</code>（输入脚不写 type）;常配 <code>facing</code>、<code>width</code>、<code>label</code>（= TTY 表头）、<code>radix</code>。</li>
+  <li><strong>怕坐标对不齐?用 隧道（Tunnel）按名字连</strong>:在两处各放一个同 <code>label</code>、同 <code>width</code> 的 <code>Tunnel</code>，即等于连上,不必拉线对坐标 —— 手写复杂电路时强烈推荐。</li>
+</ul>
+
+<h3>5.4 计数器（Counter）端口偏移（appearance=logisim_evolution，已实测）</h3>
+<p>设 <code>W = getSymbolWidth = 150 + ((width−8) / 5) × 10</code>（<em>整数</em>除法;width≤8 时 W=150,14/16 位时 W=160）。相对 <code>loc</code> 的偏移:</p>
+<table>
+  <tr><th>端口</th><th>偏移</th><th>备注</th></tr>
+  <tr><td>时钟 CK</td><td><code>(0, 80)</code></td><td>接主时钟</td></tr>
+  <tr><td>数据 D（加载值）</td><td><code>(0, 110)</code></td><td>配 加载 脚用</td></tr>
+  <tr><td>计数值 Q</td><td><code>(W+40, 110)</code></td><td>当前值输出</td></tr>
+  <tr><td>进位 Carry</td><td><code>(W+40, 50)</code></td><td><strong>向上计数时 = 当前值到达 max;向下时 = 到 0</strong>(组合输出)</td></tr>
+</table>
+<p style="margin-bottom:0">常用属性:<code>width</code>、<code>max</code>(写成 <code>0x…</code>)、<code>ongoal</code>(<code>wrap</code>默认/<code>stay</code>/<code>continue</code>/<code>load</code>)、<code>appearance</code>。<em>其余组件的端口偏移要用时再从源码 <code>configurePorts()</code> 核（或在 GUI 里量一次），别凭记忆。</em></p>
+
+<!-- ===== 6 ===== -->
+<h2 id="s6"><span class="n">6</span>验证工作流 &amp; 测试台配方</h2>
+<h3>每写一块就验一块</h3>
+<ol>
+  <li><strong>加载关</strong>:<code>--tty stats x.circ</code> —— 能打印组件、退出码 0 = 格式没问题。</li>
+  <li><strong>行为关</strong>:做一个带 <code>halt</code> 输出引脚的测试台，<code>--tty table x.circ</code> 看输出引脚随时钟变化对不对。</li>
+  <li><strong>组合关</strong>(译码器/ALU 这类):<code>--test-vector</code> 跑真值表。</li>
+</ol>
+<div class="box warn"><div class="t">★ 测试台必须有 <code>halt</code> 引脚</div>
+<p style="margin-bottom:0">时序电路（带时钟）<em>永远不会稳定</em>，所以 <code>--tty table</code> 要靠一个名叫 <code>halt</code> 的输出引脚来收尾:<strong>它变 1 就停</strong>。<u>没有</u> <code>halt</code> 引脚时,table 模式会改去做「对输入引脚穷举的组合真值表」(2^输入位 行)——那不是我们要的时序跑法。<br>
+<strong>造 halt 的最简办法</strong>:放一个 计数器（Counter）数时钟拍,<code>max=N</code>、<code>ongoal=stay</code>,把它的 进位（Carry）引到名为 <code>halt</code> 的输出引脚 —— 跑 N 拍后自动停（上面 §4 样例就是这么干的）。</p></div>
+<h3>给「子电路」套测试台</h3>
+<p>要测一个子电路（如以后的 <code>CPU</code>）:在 <code>main</code> 里实例化它,补上 时钟（Clock）→ 它的 clk、若干输出 引脚（Pin） 接到它要观察的输出（调试期可临时在子电路上多引几个 <code>pc</code>/<code>instr</code> 之类的输出脚）、再加一个 §上 的 <code>halt</code> 计数器。然后 <code>--tty table</code> 即可逐拍看它跑。</p>
+
+<footer>
+  依据:本机实测(JDK 25 / Gradle 9.5.1 / logisim-evolution 4.2.0dev) + 源码 <code>gui/start/Startup.java</code>、<code>TtyInterface.java</code>、<code>std/memory/Counter.java</code> · 样例:<code>ref/logisim-evolution/build/probe.circ</code> · 配套:<code>plan/milestone3_guide.html</code>(CPU 设计)、memory <code>logisim-headless-test-harness</code>
+</footer>
+
+</div>
+</body>
+</html>

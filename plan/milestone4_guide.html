@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>里程碑 4 · 手把手施工指引 — ALU 变速播放（老师硬性要求）+ R0–R3 + 控制面板 / 多曲 / 计时</title>
+<style>
+  :root{
+    --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
+    --line:rgba(80,60,40,.14); --text:#2d2520; --dim:#6a5a4c; --mute:#9a8a78;
+    --accent:#a8410d; --cyan:#2c6770; --red:#8b2820; --green:#4d6b2a; --purple:#5e3677;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+       font-family:"Segoe UI","Noto Sans SC",system-ui,sans-serif;font-size:15px;line-height:1.78;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 40px 120px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:22px;margin-bottom:10px}
+  h1{font-size:28px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  h1 .sub{display:block;font-size:15px;color:var(--dim);font-weight:400;margin-top:8px}
+  .meta{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--mute);
+        letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:21px;margin:46px 0 12px;padding-top:10px;border-top:1px solid var(--line);
+     color:var(--accent)}
+  h2 .n{font-family:"JetBrains Mono",monospace;font-size:13px;color:#fff;background:var(--accent);
+        padding:2px 9px;border-radius:4px;margin-right:10px}
+  h3{font-size:17px;margin:24px 0 8px}
+  p{margin:9px 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.85em;background:var(--deep);
+       padding:1px 6px;border-radius:3px;color:var(--accent)}
+  strong{color:var(--accent)} em{color:var(--cyan);font-style:normal;font-weight:600}
+  ul,ol{margin:9px 0 14px 22px} li{margin-bottom:6px}
+  .path{font-family:"JetBrains Mono",monospace;font-size:.85em;color:var(--purple);font-weight:600}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  pre{background:#fffdf8;border:1px solid var(--line);border-left:3px solid var(--cyan);
+      padding:14px 18px;margin:14px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;
+      line-height:1.6;overflow-x:auto;border-radius:0 6px 6px 0;color:var(--text)}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+       padding:13px 19px;margin:14px 0;border-radius:0 6px 6px 0}
+  .box.warn{border-left-color:var(--red);background:rgba(139,40,32,.03)}
+  .box.good{border-left-color:var(--green);background:rgba(77,107,42,.045)}
+  .box.tip{border-left-color:var(--purple);background:rgba(94,54,119,.04)}
+  .box .t{font-weight:700;margin-bottom:5px;color:var(--cyan)}
+  .box.warn .t{color:var(--red)} .box.good .t{color:var(--green)} .box.tip .t{color:var(--purple)}
+  .step{display:grid;grid-template-columns:42px 1fr;gap:16px;margin:16px 0;align-items:start}
+  .step .num{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
+             display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;
+             font-weight:600;font-size:13px;flex-shrink:0;margin-top:2px}
+  .step .body{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 18px}
+  .step .body h4{font-size:15px;margin:0 0 4px;color:var(--text)}
+  .step .body p{margin:5px 0}
+  .tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10px;padding:2px 8px;
+       border-radius:3px;color:#fff;letter-spacing:.04em;vertical-align:middle}
+  .tag.must{background:var(--red)} .tag.bonus{background:var(--green)} .tag.opt{background:var(--purple)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 22px;margin:18px 0}
+  .toc ol{margin:0;list-style:none;columns:2;column-gap:30px}
+  .toc a{color:var(--text);text-decoration:none} .toc a:hover{color:var(--accent)}
+  .toc .n{color:var(--accent);font-family:"JetBrains Mono",monospace;margin-right:7px}
+  .chk{list-style:none;margin-left:0}
+  .chk li{padding-left:30px;position:relative;margin-bottom:9px}
+  .chk li:before{content:"\2610";position:absolute;left:4px;color:var(--accent);font-size:18px;top:-2px}
+  footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--line);color:var(--mute);
+         font-family:"JetBrains Mono",monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="meta">Milestone 4 · 手把手 · 单人单刷 · Logisim Evolution v4.1.0</div>
+  <h1>里程碑 4：把 CPU 补成完整规格 —— ALU 变速播放 + R0–R3 + 控制面板
+    <span class="sub">里程碑 3 的 CPU 已能自动读谱、让 track00 出声。本里程碑补齐三件事：<strong class="">① ALU 接进 <code>WAIT</code> 变速播放（<span class="tag must">老师硬性要求 · 不可砍</span>「可控加减运算」必须参与播放主功能，而不只是孤立 demo）</strong>；② 通用寄存器 <code>R0–R3</code> + <code>LOADI/ADD/SUB/WRITEREG</code> + 可视化证明；③ 控制面板（<code>top.circ</code>）：播放/暂停/停止、上/下一首（16 曲 MUX）、MM:SS 计时。做完，这就是一台<strong>能演示、能讲、规格完整</strong>的播放器。</span>
+  </h1>
+</header>
+
+<div class="box good">
+  <div class="t">里程碑 3 的结论（作为本里程碑的地基）</div>
+  <ul style="margin-bottom:0">
+    <li><code>cpu.circ</code> 的 CPU 已能取指/译码 <code>WAIT/WRITE/END</code>，<code>WAIT</code> 停顿状态机正确，接 <code>apu.circ</code> 播 track00。</li>
+    <li>本里程碑的「<strong>ALU 切入点</strong>」就是里程碑 3 §4 那条 <code>IMM → 位扩展器 → WAIT 计数器的数据脚</code> 的路径——把它中间塞一个 ALU，就实现「真实播放时每帧的 <code>WAIT</code> 都经过加/减」。</li>
+    <li>验证手段已就绪：<span class="path">plan/logisim_test_harness.html</span> 的无界面 jar——组合逻辑(ALU)可用 <code>--test-vector</code> 跑真值表，时序(变速后的 WAIT 拍数)可用 <code>--tty table</code> 看。</li>
+  </ul>
+</div>
+
+<div class="box tip">
+  <div class="t">本里程碑的优先级（时间不够时照此取舍）</div>
+  <ul style="margin-bottom:0">
+    <li><span class="tag must">必做</span> <strong>§2 ALU 接入 WAIT 变速</strong> + <strong>§3 R0–R3 与 ALU 指令 + 可视化</strong>——这是老师点名的「可控加减运算」，<em>绝不可砍</em>，且必须能现场演示。</li>
+    <li><span class="tag bonus">加分</span> <strong>§4 控制面板 / 16 曲切换 / 计时</strong>——锦上添花。时间紧可退化为「手动换 ROM」。</li>
+    <li><span class="tag opt">兼容</span> <strong>§5 LWAIT</strong>——只有当某首曲子出现 &gt;4095 拍的长静音才需要；track00 用不到。</li>
+    <li>菜单一律 <code>中文（English）</code> 双语；涉及 Logisim 行为的论断标注了源码出处。</li>
+  </ul>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><span class="n">0</span><a href="#s0">总览：ALU 在哪、数据流</a></li>
+    <li><span class="n">1</span><a href="#s1">新增部件速查（运算器三件套 + MUX + 数码显示）</a></li>
+    <li><span class="n">2</span><a href="#s2">★ ALU 接入 WAIT 变速播放（必做）</a></li>
+    <li><span class="n">3</span><a href="#s3">R0–R3 + LOADI/ADD/SUB/WRITEREG + 可视化（必做）</a></li>
+    <li><span class="n">4</span><a href="#s4">控制面板 / 16 曲切换 / 计时（加分）</a></li>
+    <li><span class="n">5</span><a href="#s5">LWAIT 长等待（兼容，可选）</a></li>
+    <li><span class="n">6</span><a href="#s6">里程碑 4 验收清单</a></li>
+    <li><span class="n">7</span><a href="#s7">收尾 &amp; 答辩要点</a></li>
+  </ol>
+</div>
+
+<!-- ===================== 0 ===================== -->
+<h2 id="s0"><span class="n">0</span>总览：ALU 在哪、数据流</h2>
+<p>里程碑 3 的 CPU 里，<code>WAIT</code> 指令把立即数 <code>imm</code> 直接装进倒计时计数器。本里程碑在<strong>这条装载路径上插一个 ALU</strong>：装进去的不再是 <code>imm</code>，而是 <code>有效等待 = imm 经加/减调速后的值</code>。于是控制面板按一下「慢/快」，真实曲子的节奏就变——<strong>这就是「可控加减运算参与播放主功能」</strong>，不是摆设。</p>
+<pre>
+里程碑 3:   IMM(12) ──位扩展──► WAIT 计数器.数据脚
+里程碑 4:   IMM(12) ──位扩展──►┌───────── ALU 调速 ─────────┐──► WAIT 计数器.数据脚
+                               │  normal: 有效 = imm          │
+            tempo_delta ──────►│  slow  : 有效 = imm + delta  │  (加法器)
+            tempo_mode(2) ────►│  fast  : 有效 = imm − delta  │  (减法器，且钳到 ≥1)
+                               └──── 多路复用器 按 tempo_mode 选 ┘
+
+另一处用同一类 ALU：通用寄存器 R0–R3 + 指令 LOADI/ADD/SUB/WRITEREG，配 数码显示 现场证明 R2 = R0 + R1。
+控制面板(top.circ)：播放/暂停(门控时钟) · 停止(复位+reg9=0) · 上/下一首(4 位曲号 → 16:1 MUX 选 ROM) · MM:SS 计时。
+</pre>
+<div class="box tip"><div class="t">两处 ALU 是否要合一？</div>
+<p style="margin-bottom:0"><code>detailed_plan</code> §5 的本意是「<strong>一个 ALU</strong>，主用途接 WAIT 变速、同时拿 R0–R3 demo 做可视化」。合一更优雅(输入再加一层 MUX 在 <code>imm/delta</code> 与 <code>Ra/Rb</code> 间选)，但对单人施工<strong>分开搭更清楚、也都能过验收</strong>：§2 的加/减专管播放调速(已满足「参与播放」)，§3 的 ALU 专做寄存器运算 demo。本指引按「分开」写，最后给一个「合一」的提示。</p></div>
+
+<!-- ===================== 1 ===================== -->
+<h2 id="s1"><span class="n">1</span>新增部件速查（数值均按 <code>ref/logisim-evolution</code> v4.1.0 源码核实）</h2>
+<table>
+  <tr><th>部件</th><th>库 / 菜单</th><th>引脚（按源码 tooltip）/ 属性</th><th>本里程碑怎么用</th></tr>
+  <tr>
+    <td><strong>加法器<br>Adder</strong></td>
+    <td>运算器（Arithmetic）</td>
+    <td>左上 <code>a</code>、左下 <code>b</code>、右 <code>和</code>(=a+b)；上方<em>进位输入</em>（“为 1 则输出再加 1”）、下方<em>进位输出</em>（“和溢出则为 1”）。属性 <code>数据位宽（Data Bits）</code>。</td>
+    <td>慢速档 <code>imm + tempo_delta</code>；以及 ADD 指令 <code>R[Ra]+R[Rb]</code>。<em>进位输入</em>接 0 常量。</td>
+  </tr>
+  <tr>
+    <td><strong>减法器<br>Subtractor</strong></td>
+    <td>运算器（Arithmetic）</td>
+    <td>左上 <code>被减数</code>、左下 <code>减数</code>、右 <code>差</code>(<strong>= 被减数 − 减数</strong>)；上方<em>借位输入</em>、下方<em>借位输出</em>。</td>
+    <td>快速档 <code>imm − tempo_delta</code>（被减数=imm、减数=delta）；以及 SUB 指令。<em>借位输入</em>接 0 常量。</td>
+  </tr>
+  <tr>
+    <td><strong>比较器<br>Comparator</strong></td>
+    <td>运算器（Arithmetic）</td>
+    <td>左 <code>a</code>/<code>b</code>，右三脚 <code>&gt;</code>/<code>=</code>/<code>&lt;</code>。属性 <code>数值类型（Numeric Type）= 无符号（Unsigned）</code> 或 <code>补码（2's Complement）</code>。</td>
+    <td>快速档下限保护：比 <code>imm</code> 与 <code>tempo_delta</code>，若 <code>imm ≤ delta</code> 就改装常量 1（防止减成负数回绕成超大值）。</td>
+  </tr>
+  <tr>
+    <td><strong>多路复用器<br>Multiplexer</strong></td>
+    <td>复用器（Plexers）</td>
+    <td>属性 <code>选择位数（Select Bits）=k</code> → <strong>2^k 个数据输入</strong> + 1 个<em>选择</em>脚 + 1 个输出；<code>数据位宽（Data Bits）</code>。（v4.x 默认<strong>无</strong>使能脚，省心。）</td>
+    <td>调速三选一（选择位=2）；R0–R3 读口（选择位=2，四选一）；16 曲选择（选择位=4，<code>数据位宽=16</code>）。</td>
+  </tr>
+  <tr>
+    <td><strong>16 进制数码显示<br>Hex Digit Display</strong></td>
+    <td>输入/输出（Input/Output）</td>
+    <td><strong>输入 4 位</strong>(显示一个 16 进制位) + 一个小数点(DP)脚。</td>
+    <td>显示寄存器值：8 位寄存器要用 Splitter（分线器）拆成高/低 4 位、配<strong>两个</strong>数码显示。<em>嫌麻烦就用 探针（Probe）</em>(见下)。</td>
+  </tr>
+  <tr>
+    <td><strong>探针<br>Probe</strong></td>
+    <td>线路（Wiring）</td>
+    <td>接任意总线，按所选 <code>radix</code>(2/10/16) 显示其值，不影响电路。</td>
+    <td><strong>最省事的可视化</strong>：直接贴到 R0–R3 的 Q 上、设 16 进制，一颗顶两个数码显示。答辩要「好看」再换数码显示。</td>
+  </tr>
+</table>
+
+<!-- ===================== 2 ===================== -->
+<h2 id="s2"><span class="n">2</span>★ ALU 接入 <code>WAIT</code> 变速播放 <span class="tag must">必做 · 老师硬性要求</span></h2>
+<p>目标：控制面板给一个 2 位 <code>tempo_mode</code>(0=正常/1=慢/2=快) 和一个 <code>tempo_delta</code>(调速幅度，比如 8)，让<strong>每一条 <code>WAIT</code> 装载前先经 ALU 算 <code>有效等待</code></strong>。这样真实播放时加/减器每帧都在工作。</p>
+
+<div class="step"><div class="num">A1</div><div class="body">
+  <h4>准备 <code>tempo_delta</code> 和 <code>tempo_mode</code> 两个输入</h4>
+  <p>本节先在 CPU 里把它们当<strong>输入 引脚（Pin）</strong>引进来（§4 控制面板再接到真正的开关）：<code>tempo_delta</code>(16 位，先接个 值=<code>0x08</code> 的 常量（Constant） 测试)、<code>tempo_mode</code>(2 位)。<em>delta 用 16 位是为了和 WAIT 计数器(16 位)对齐。</em></p>
+</div></div>
+<div class="step"><div class="num">A2</div><div class="body">
+  <h4>放 加法器（Adder） 和 减法器（Subtractor），各 16 位</h4>
+  <p>都设 <code>数据位宽（Data Bits）=16</code>。接线：</p>
+  <ul style="margin:4px 0 0">
+    <li>加法器：<code>a</code>=<code>imm</code>(经里程碑 3 的位扩展器补成 16 位)、<code>b</code>=<code>tempo_delta</code>、<em>进位输入</em>接 值=0 的 1 位 常量（Constant）。输出 <code>和</code> = <code>imm+delta</code>(慢)。</li>
+    <li>减法器：<code>被减数</code>=<code>imm</code>(同一根 16 位)、<code>减数</code>=<code>tempo_delta</code>、<em>借位输入</em>接 0 常量。输出 <code>差</code> = <code>imm−delta</code>(快)。</li>
+  </ul>
+</div></div>
+<div class="step"><div class="num">A3</div><div class="body">
+  <h4>快速档下限保护（比较器（Comparator） + 一个 2:1 MUX）</h4>
+  <p><code>imm − delta</code> 在 <code>imm ≤ delta</code> 时会变成负数、<em>按无符号回绕成接近 65535 的巨值</em> → 卡死。修法：放一个 比较器（Comparator）(<code>数值类型=无符号（Unsigned）</code>)，<code>a</code>=imm、<code>b</code>=tempo_delta；放一个 多路复用器（Multiplexer）(<code>选择位数=1</code>、<code>数据位宽=16</code>)：<br>
+  • 选择脚 = 比较器的 <code>&lt;</code> 或 <code>=</code>（即 <code>imm ≤ delta</code>，用一个 或门（OR Gate） 把 <code>&lt;</code> 和 <code>=</code> 并起来）。<br>
+  • 数据 0 = 减法器的 <code>差</code>；数据 1 = 值=<code>0x0001</code> 的 16 位 常量（Constant）。<br>
+  这样快速档真正用的是 <code>钳位后的快速值</code>(下限 1)。</p>
+</div></div>
+<div class="step"><div class="num">A4</div><div class="body">
+  <h4>调速三选一：一个 多路复用器（Multiplexer） 选 <code>有效等待</code></h4>
+  <p>放 多路复用器（Multiplexer）：<code>选择位数（Select Bits）=2</code>、<code>数据位宽（Data Bits）=16</code>。<em>选择</em>脚接 <code>tempo_mode</code>(2 位)。数据脚：</p>
+  <table style="margin:6px 0">
+    <tr><th>tempo_mode</th><th>该路数据</th><th>含义</th></tr>
+    <tr><td><code>0</code> 正常</td><td><code>imm</code>(16 位)</td><td>原速</td></tr>
+    <tr><td><code>1</code> 慢</td><td>加法器 <code>和</code> = imm+delta</td><td>等待更久 ⇒ 更慢</td></tr>
+    <tr><td><code>2</code> 快</td><td>A3 钳位后的 imm−delta</td><td>等待更短 ⇒ 更快</td></tr>
+    <tr><td><code>3</code> (未用)</td><td>随意(接 imm)</td><td>—</td></tr>
+  </table>
+  <p style="margin:6px 0 0"><strong>把这个 MUX 的输出，接到里程碑 3 那个 <code>WAIT 计数器的数据脚</code></strong>(替换原来直连的 imm)。完工：每条 <code>WAIT</code> 现在都经 ALU。</p>
+</div></div>
+
+<div class="box good"><div class="t">★ 关于「微调播放速度」：粒度、怎么调到刚好、与 4kHz 测试是什么关系</div>
+<p style="margin:0 0 6px">这套 ALU 调速<strong>本身就是"微调"工具</strong>——关键是 <code>tempo_delta</code> 别设大（A1 举例 8 只是为了演示明显）。<strong>每帧只有一条 <code>WAIT</code></strong>，整帧 = <code>frame_cycles</code>(=32) 拍；慢档给这帧 +delta 拍 ⇒ 该帧变 <code>32+delta</code> 拍、速度 ×<code>32/(32+delta)</code>：</p>
+<table style="margin:6px 0">
+  <tr><th>tempo_delta</th><th>慢档(mode=1)</th><th>快档(mode=2)</th><th>每档约</th></tr>
+  <tr><td><code>1</code></td><td>×32/33 ≈ <strong>−3%</strong></td><td>×32/31 ≈ <strong>+3%</strong></td><td>~3% / 档</td></tr>
+  <tr><td><code>2</code></td><td>≈ −6%</td><td>≈ +7%</td><td>~6%</td></tr>
+  <tr><td><code>8</code>（A1 举例）</td><td>≈ −20%</td><td>≈ +27%</td><td>大步，非微调</td></tr>
+</table>
+<p style="margin:0 0 6px"><strong>要"小幅微调"：把 <code>tempo_delta</code> 设成 1~2，每按一下慢/快只动 ~3~6%。</strong>想<em>更细</em>有两条路：① 把 <code>tempo_delta</code> 做成<strong>可调</strong>（§4 控制面板用一个 3~4 位 拨码开关（DIP Switch）/上下按钮给 delta 0~7，而非焊死常量）——慢/快 × delta 组合出一排细档；② 离线在 <code>encode.py</code> 把 <code>frame_cycles</code> 调大（如 64）⇒ 每档 ≈ <code>delta/64</code> ≈ 1.5%/档，分辨率翻倍（代价：基准 CPU 时钟要相应调快；指令 ROM 几乎不变大，因为每帧仍只一条 WAIT）。</p>
+<div class="box warn" style="margin:8px 0 0"><div class="t" style="font-size:13px">校准顺序 + 现状澄清（重要）</div><p style="margin:0;font-size:13.5px"><strong>① 基准速度</strong>先靠 <code>frame_cycles</code>（离线）+ 自动节拍频率（Auto-Tick Frequency，运行时，但只有 1/2/4/8kHz 粗档）定到接近实时；<strong>② 微调</strong>再用本节 ALU 慢/快 + 小 delta 现场修零头。<strong>4kHz / frame_cycles=32 客观上只比实时快约 +4%</strong>（2000 拍 ÷ 32 = 62.5fps vs 真实 60.0988fps），<em>不是 20%</em>——之前听感偏快多半是被那串 ~60Hz 爆破"催"出来的；先听<strong>节流版</strong>再判断。真要抹平这 +4%：慢档 + <code>delta=1</code>（−3%）压到 ~+1%，或离线把 <code>frame_cycles</code> 改 33 重生成。<br><strong>注意：平铺 ROM 试听台（apu_test）没有 CPU/WAIT，用不上这套 ALU 调速</strong>——它只能靠自动节拍频率（粗）或重生成 <code>frame_cycles</code>（细）。<strong>ALU 的运行时微调是"上了 CPU 之后"才有的能力，正是本里程碑交付的。</strong></p></div>
+</div>
+
+<div class="box good"><div class="t">用点测环境验 ALU（不用肉眼盯波形）</div>
+<p style="margin-bottom:0">把「imm / tempo_delta / tempo_mode → 有效等待」这块<em>组合逻辑</em>单独做成一个子电路、引出输入输出 引脚（Pin），写一个测试向量文件，用 <code>--test-vector</code> 跑：例如 <code>imm=30,delta=8,mode=1 ⇒ 38</code>、<code>mode=2 ⇒ 22</code>、<code>imm=5,delta=8,mode=2 ⇒ 1</code>(钳位生效)。一把就能确认加/减/钳位都对。命令与向量格式见 <span class="path">plan/logisim_test_harness.html</span> §2。</p></div>
+<div class="box tip"><div class="t">顺带把里程碑 3 的「+2 拍」精确化（可选）</div>
+<p style="margin-bottom:0">里程碑 3 提过 <code>WAIT n</code> 实占 <code>n+2</code> 拍。既然这条路上已经有减法器，可把<strong>装入值再 −2</strong>(并用 A3 同款钳位保证 ≥1)，得到精确 n 拍。但节奏本来靠节拍频率现场调，这步<em>纯属锦上添花</em>，不做也不影响验收。</p></div>
+
+<!-- ===================== 3 ===================== -->
+<h2 id="s3"><span class="n">3</span>R0–R3 + <code>LOADI/ADD/SUB/WRITEREG</code> + 可视化 <span class="tag must">必做</span></h2>
+<p>这一节搭出「真正的 ALU + 通用寄存器」并用一段 demo 程序现场证明。指令位布局(取自 <code>detailed_plan</code> §3)：</p>
+<table>
+  <tr><th>op</th><th>助记</th><th>位布局 [15..0]</th><th>语义</th></tr>
+  <tr><td><code>0x4</code></td><td>LOADI</td><td><code>0100 | Rd(2) | ──(2) | imm8</code></td><td><code>R[Rd] = imm8</code>（Rd=[11:10]，imm8=[7:0]）</td></tr>
+  <tr><td><code>0x5</code></td><td>ADD</td><td><code>0101 | Rd(2) | Ra(2) | Rb(2) | ──</code></td><td><code>R[Rd] = R[Ra] + R[Rb]</code></td></tr>
+  <tr><td><code>0x6</code></td><td>SUB</td><td><code>0110 | Rd(2) | Ra(2) | Rb(2) | ──</code></td><td><code>R[Rd] = R[Ra] − R[Rb]</code></td></tr>
+  <tr><td><code>0x7</code></td><td>WRITEREG</td><td><code>0111 | reg(4) | Rs(2) | ──</code></td><td><code>APU[reg] = R[Rs]</code>（把算出的值写进 APU）</td></tr>
+</table>
+
+<div class="step"><div class="num">B1</div><div class="body">
+  <h4>放 4 个通用寄存器 R0–R3</h4>
+  <p><span class="path">存储器 → 寄存器（Memory → Register）</span> 放 4 个，<code>数据位宽（Data Bits）=8</code>，标签 <code>R0/R1/R2/R3</code>。时钟统一接 CPU 主时钟，清除接 <code>reset</code>。<em>(标签唯一性同里程碑 2：寄存器叫 <code>R0</code>，对外若要引出观测脚就叫 <code>R0_out</code> 之类。)</em></p>
+</div></div>
+<div class="step"><div class="num">B2</div><div class="body">
+  <h4>读口：两个四选一 MUX 取出 <code>R[Ra]</code> 和 <code>R[Rb]</code></h4>
+  <p>放两个 多路复用器（Multiplexer）：<code>选择位数=2</code>、<code>数据位宽=8</code>。四个数据脚都接 <code>R0/R1/R2/R3</code> 的 <code>Q</code>。一个的<em>选择</em>脚接 <code>Ra</code>(=instr[9:8])、输出即 <code>R[Ra]</code>；另一个选 <code>Rb</code>(=instr[7:6])、输出 <code>R[Rb]</code>。<br>
+  <em>(用 Splitter（分线器） 从 INSTR 拆出 Ra=[9:8]、Rb=[7:6]、Rd=[11:10]，同里程碑 3 §3 的拆位手法。)</em></p>
+</div></div>
+<div class="step"><div class="num">B3</div><div class="body">
+  <h4>ALU 本体：加法器 + 减法器 + 结果 MUX（8 位）</h4>
+  <p>放 加法器（Adder） 与 减法器（Subtractor），<code>数据位宽=8</code>：<code>a/被减数</code>=<code>R[Ra]</code>，<code>b/减数</code>=<code>R[Rb]</code>，进/借位输入接 0。放一个结果 多路复用器（Multiplexer）(<code>选择位数=1</code>、<code>数据位宽=8</code>)：选择脚 = <code>is_sub</code>(opcode=0x6)，数据 0=加法和、数据 1=减法差。输出 = <code>ALU 结果</code>。</p>
+</div></div>
+<div class="step"><div class="num">B4</div><div class="body">
+  <h4>写回：Rd 译码 + 写使能；LOADI 走另一路数据</h4>
+  <p>每个寄存器的<em>数据 D</em> 该接什么？放一个写回 多路复用器（Multiplexer）(<code>选择位数=1</code>、<code>数据位宽=8</code>)：选择脚=<code>is_loadi</code>(opcode=0x4)，数据 0=<code>ALU 结果</code>(B3)、数据 1=<code>imm8</code>(=instr[7:0])。它的输出同时接到 <strong>R0–R3 全部的 D</strong>。<br>
+  写使能：放一个 译码器（Decoder）(<code>选择位数=2</code>)，输入 <code>Rd</code>(=instr[11:10]) → 4 路 one-hot；第 k 路 与 <code>是否“要写寄存器的指令”</code>(=<code>is_loadi 或 is_add 或 is_sub</code>，用 或门（OR Gate）) 相与，接到 <code>Rk</code> 的<em>写使能</em>。于是只有 <code>Rd</code> 选中那个寄存器、且当前是 LOADI/ADD/SUB 时才在时钟沿写入。</p>
+  <div class="box" style="margin:8px 0 0"><div class="t" style="font-size:13px">opcode 译码复用里程碑 3</div><p style="margin:0;font-size:13.5px">里程碑 3 已有一个 opcode → 16 路 译码器（Decoder）。<code>is_loadi=第4路</code>、<code>is_add=第5路</code>、<code>is_sub=第6路</code>、<code>is_writereg=第7路</code>，直接取来用。</p></div>
+</div></div>
+<div class="step"><div class="num">B5</div><div class="body">
+  <h4>WRITEREG：把算出的值喂回 APU</h4>
+  <p>里程碑 3 的 APU 写口 <code>value</code> 原本固定接 <code>instr[7:0]</code>。这里在它前面加一个 多路复用器（Multiplexer）(<code>选择位数=1</code>、<code>数据位宽=8</code>)：选择脚=<code>is_writereg</code>，数据 0=<code>instr[7:0]</code>(普通 WRITE)、数据 1=<code>R[Rs]</code>(再加一个四选一 MUX，选择脚=Rs=instr[7:6])。<code>reg_id</code> 仍取 instr[11:8]；写脉冲 <code>WR</code> 对 WRITE 和 WRITEREG 都要发(把 <code>is_write 或 is_writereg</code> 与时钟相与)。</p>
+</div></div>
+<div class="step"><div class="num">B6</div><div class="body">
+  <h4>可视化 + demo 程序</h4>
+  <p>给 <code>R0–R3</code> 的 <code>Q</code> 各贴一个 探针（Probe）(<code>radix=16</code>)，或用 16 进制数码显示（Hex Digit Display）(8 位要配 Splitter（分线器） + 两个数码显示)。<br>
+  写一段 demo ROM 验证(右键 ROM <span class="path">编辑内容…（Edit Contents…）</span> 填这几个字)：</p>
+  <pre>4005   LOADI R0, 0x05     ; R0 = 5
+4403   LOADI R1, 0x03     ; R1 = 3
+5840   ADD   R2, R0, R1   ; R2 = R0+R1 = 8
+f000   END</pre>
+  <p style="margin:6px 0 0">单步/慢跑后 <code>R2</code> 应显示 <strong>8</strong>。改 ADD 为 SUB(把 <code>5840</code> 改 <code>6840</code>) 则 <code>R2 = 5−3 = 2</code>。这就是答辩用的「可控加减」现场证明。</p>
+</div></div>
+
+<!-- ===================== 4 ===================== -->
+<h2 id="s4"><span class="n">4</span>控制面板 / 16 曲切换 / 计时 <span class="tag bonus">加分</span></h2>
+<p>这部分在 <strong><code>top.circ</code></strong> 里搭：用 <span class="path">项目 → 加载库 → Logisim-evolution 库…（Project → Load Library → Logisim-evolution Library…）</span> 把 <code>cpu.circ</code> 和 <code>apu.circ</code> 当库加载进来，再围着它们搭面板。</p>
+<div class="step"><div class="num">C1</div><div class="body">
+  <h4>播放 / 暂停（门控时钟）</h4>
+  <p>放一个 D 触发器（D Flip-Flop）(<span class="path">存储器 → D 触发器</span>) 当 <code>running</code> 标志，用 按钮（Button） 翻转它。<strong>CPU 主时钟 = 母时钟 与 running</strong>(一个 与门（AND Gate))：<code>running=0</code> 时 CPU 时钟不跳、PC 冻结、音乐停在当前音。</p>
+</div></div>
+<div class="step"><div class="num">C2</div><div class="body">
+  <h4>停止</h4>
+  <p>一个 停止 按钮（Button）：脉冲同时 ① 给 CPU 的 <code>reset</code>(PC→0)、② 强制 <code>reg9=0</code> 静音(可在 APU 的 <code>reg9</code> 通路上加一个「停止时清零」的门控，或直接给 RegFile 一个复位)。</p>
+</div></div>
+<div class="step"><div class="num">C3</div><div class="body">
+  <h4>上 / 下一首：4 位曲号 → 16:1 MUX 选 ROM</h4>
+  <p>放一个 4 位 计数器（Counter） 当<code>曲号</code>(0–15)，上一首/下一首两个 按钮（Button） 控制它 −1/+1(或两个计数器、或加减)。<br>
+  放 <strong>16 个 ROM</strong>(各 <code>地址位宽=16、数据位宽=16</code>)，分别 <span class="path">加载映像…（Load Image…）</span> <code>track00.txt … track15.txt</code>；<strong>16 个 ROM 的地址脚都接 PC</strong>(并联读)，16 个数据脚接一个 多路复用器（Multiplexer）(<code>选择位数=4</code>、<code>数据位宽=16</code>)，<em>选择</em>脚=<code>曲号</code>，输出 = 当前曲的 <code>instr</code> 喂给 CPU。切歌时给 <code>reset</code> 复位 PC。</p>
+  <div class="box warn" style="margin:8px 0 0"><div class="t" style="font-size:13px">16 个大 ROM 很吃内存</div><p style="margin:0;font-size:13.5px">最大曲约 4 万字 ×16。若 Logisim 吃力，先只装 2–4 首验证切歌逻辑，答辩时再视情况加载；功能正确比塞满 16 首重要。</p></div>
+</div></div>
+<div class="step"><div class="num">C4</div><div class="body">
+  <h4>MM:SS 计时 + 自动下一首</h4>
+  <p>「1 秒」从<strong>音乐帧</strong>来最准：里程碑 3 的 <code>frame_commit</code> 每帧一拍(~60Hz)。放一个 计数器（Counter）(<code>最大值=59</code>、<code>溢出时行为=回绕</code>)数 frame_commit，它的 进位（Carry） ≈ 每秒一拍 → 驱动「秒」计数器(<code>最大值=59</code>)，秒的进位驱动「分」计数器。各接 16 进制数码显示（Hex Digit Display） 或 探针（Probe） 显示 MM:SS。<br>
+  自动下一首：给「分/秒」配一个 比较器（Comparator） 比到设定上限(如 4:00) → 脉冲让<code>曲号</code> +1。<em>(注意 ~62.5 vs 60 的细微误差，见里程碑 2 §4.5；演示足够。)</em></p>
+</div></div>
+
+<!-- ===================== 5 ===================== -->
+<h2 id="s5"><span class="n">5</span>LWAIT 长等待 <span class="tag opt">兼容 · 可选</span></h2>
+<p>里程碑 3 的 <code>WAIT</code> 只处理 1 字、imm≤4095。<code>LWAIT</code>(opcode <code>0x2</code>) 是 2 字指令：<em>下一字</em>才是 16 位等待数，用于 &gt;4095 拍的长静音。track00 不含它(已核对)，只有个别长静音曲才需要。</p>
+<p>实现 = 给 WAIT 状态机加一个「取操作数」小步骤：<code>busy==0 且 opcode==0x2</code> 时，<strong>先让 PC+1</strong> 去取下一字、置一个 <code>lwait_fetch</code> 标志；下一拍把 <code>ROM[PC]</code>(那 16 位数) 装进 WAIT 计数器、置 <code>busy</code>、清 <code>lwait_fetch</code>；倒数完照常 PC+1(此时已自然跨过两字)。本质是再加一个一拍的状态，原理与 §里程碑 3 的 busy 机一致。</p>
+
+<!-- ===================== 6 ===================== -->
+<h2 id="s6"><span class="n">6</span>里程碑 4 验收清单</h2>
+<ul class="chk">
+  <li><span class="tag must">必做</span> ALU 接进 <code>WAIT</code>：<code>tempo_mode</code> 切 正常/慢/快 时，<strong>真实曲子的节奏随之变</strong>(快档不卡死)；加/减/钳位用 <code>--test-vector</code> 验证通过。</li>
+  <li><span class="tag must">必做</span> R0–R3 + <code>LOADI/ADD/SUB/WRITEREG</code> + 读/写口 + 写使能译码搭好；demo 程序现场显示 <code>R2=R0+R1=8</code>(改 SUB 得 2)。</li>
+  <li><span class="tag bonus">加分</span> 控制面板：播放/暂停冻结、停止复位静音、上/下一首切 ROM、MM:SS 计时(自动下一首可选)。</li>
+  <li><span class="tag opt">兼容</span>（若做）LWAIT 2 字长等待正确。</li>
+  <li>全程<strong>无红线 / 无灰线</strong>；<code>top.circ</code> 用 加载库 正确组装 cpu+apu；已存盘并备份 <code>*_m4.circ</code>。</li>
+</ul>
+
+<!-- ===================== 7 ===================== -->
+<h2 id="s7"><span class="n">7</span>收尾 &amp; 答辩要点</h2>
+<p>做完里程碑 4，整台播放器规格完整：<strong>五段 CPU + ALU 可控加减 + 寄存器 + APU 出声 + 控制面板 + 多曲</strong>。答辩时三条主线最稳：</p>
+<ul>
+  <li><strong>「ALU 不是摆设」</strong>：现场切 慢/快，曲子节奏当场变——因为每条 <code>WAIT</code> 都过加/减器(§2)；再用 demo 程序展示 <code>R2=R0±R1</code>(§3)。这正面回应老师「可控加减运算」。</li>
+  <li><strong>「五段单周期」</strong>：IF/ID/EX/MEM/WB 五阶段、非流水线(已向老师确认)；唯一的多周期处理是 <code>WAIT</code> 停顿 busy 状态机(里程碑 3 §4)。</li>
+  <li><strong>「真 NES 音乐」</strong>：从 NSF 离线转码成指令 ROM，CPU 读谱、APU 用真实 Hz 发声、节奏靠 <code>WAIT</code>+时钟分频(里程碑 1–3)。</li>
+</ul>
+<p style="margin-bottom:0">队友 A/C/D 的答辩防身材料(各自负责的 top/cpu/apu 部分)留作最后一步，按用户安排另开文档。</p>
+
+<footer>
+  Milestone 4 of N · 依据：Logisim Evolution v4.1.0 源码（Adder/Subtractor/Comparator/Multiplexer/HexDigit 端口与属性，i18n 中英术语按 key 核实）· 设计：plan/detailed_plan.html（§3 ISA、§5 ALU+WAIT、§7 控制面板）· 配套：plan/milestone3_guide.html（CPU 核心）、plan/logisim_test_harness.html（点测环境验 ALU）
+</footer>
+
+</div>
+</body>
+</html>

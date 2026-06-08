@@ -8,7 +8,7 @@
 ---
 
 ## 0. 最重要的当前状态(一句话)
-脚本工具链**全部完成并验证**;**里程碑 1 已实测通过**(Buzzer 高位分频扫表听感正常,固定 440Hz 长音音高正确)。**里程碑 2 的手把手施工指引已写好**:`plan/milestone2_guide.html`(寄存器前端 RegFile + 可复用 Channel_Pulse + 按帧采样门控 + 扩 4 通道封 APU)。下一步 = 用户照该指引在 `apu.circ` 里搭并实测,然后才进里程碑 3(CPU)。
+脚本工具链**全部完成并验证**;**里程碑 1 已实测通过**(Buzzer 高位分频扫表听感正常,固定 440Hz 长音音高正确)。**里程碑 2、3 的手把手施工指引均已写好**:`plan/milestone2_guide.html`(APU:RegFile 写口 + 可复用 Channel_Pulse + 按帧采样门控 + 扩 4 通道封 APU;输出脚已定为 `regN_out` 避开同名判重)、`plan/milestone3_guide.html`(CPU:单周期五段 + WAIT 停顿状态机 + WRITE/END,接 M2 APU 播 track00)。下一步 = 用户照指引在 `apu.circ`/`cpu.circ` 里实搭并实测(2–4kHz 自动节拍下 track00 出声、节奏稳、会循环),然后进里程碑 4(ALU 变速 + 控制面板)。
 
 ---
 
@@ -39,7 +39,8 @@
 - `project_brief_v6.html` —— 原始计划书(已加"勘误"框;**第 10 节四人分工保持原样,勿改**)。
 - `reviewed_execution_guide.html` —— 另一个 agent 的审阅修正版(和我们的一致)。
 - **`milestone1_guide.html`** —— 当前在用的手把手施工指引,已做成:**多 circ 形式** + **中文(English) 双语操作** + 已补 Counter 时钟脚/ROM 加载对话框/找脚两招等修正。
-- **`milestone2_guide.html`** —— 里程碑 2 指引(已写并二审修正可行性):RegFile(译码器+寄存器组,reg_id/value/WR 写口) + Channel_Pulse(双 Splitter 拼 11 位 timer→freq_pulse→Buzzer,音量/占空比/使能) + §4.5 ~60Hz 按帧采样门控 + §5 扩 Pulse2/Triangle/Noise 封 APU。已按 `ref/logisim-evolution` 修正:寄存器 CLR/EN 明确接常量、去掉快捷键、frame_clk 给精确 Counter 位表、接 CPU 后建议改接 `frame_commit` 避免采到半更新寄存器组合。
+- **`milestone2_guide.html`** —— 里程碑 2 指引(已写并二审修正可行性):RegFile(译码器+寄存器组,reg_id/value/WR 写口) + Channel_Pulse(双 Splitter 拼 11 位 timer→freq_pulse→Buzzer,音量/占空比/使能) + §4.5 ~60Hz 按帧采样门控 + §5 扩 Pulse2/Triangle/Noise 封 APU。已按 `ref/logisim-evolution` 修正:寄存器 CLR/EN 明确接常量、去掉快捷键、frame_clk 给精确 Counter 位表、接 CPU 后建议改接 `frame_commit` 避免采到半更新寄存器组合。**RegFile 输出脚命名为 `regN_out`**(同子电路标签必须唯一、与部件类型无关,源码 `Circuit.isExistingLabel()`;寄存器本身仍叫 `regN`、Channel_Pulse 输入仍叫 `regN`)。
+- **`milestone3_guide.html`** —— 里程碑 3 指引(CPU,据 `ref/logisim-evolution` 源码核实):单周期五段 IF/ID/EX/MEM/WB,在新文件 `cpu.circ` 里搭,联调时 `项目→加载库` 把 `apu.circ` 拉进来播 track00。锁定的设计:**PC = 向上 Counter、WAIT 倒计时 = 向下 Counter**(省掉加法器/比较器);**WAIT 停顿状态机**用 1 位 `busy` 触发器破"重装死循环",化简出 `stall == busy_next`;**WAIT 计数器的进位(Carry)是组合输出、向下时 = 值==0**,直接当 `at_zero`(`Counter.java` propagate 已核实:Carry 组合、加载优先于计数、清除异步、使能/方向悬空按真);`WR = is_write·clk`(门控脉冲,否则连续 WRITE 丢第二条)、`END→PC 装 0` 循环、`frame_commit = start·clk` 接 APU `frame_clk`。诚实交代:WAIT n 实占 n+2 拍(每帧一条 WAIT,均匀常数,被节拍频率吸收;M4 的 ALU 在装载路径上减掉)。track00 仅含 WAIT/WRITE/END、无 LWAIT。
 
 ### 1.4 项目 Skill 和 Memory
 - **`.claude/skills/logisim-zh-terms/SKILL.md`** —— Logisim 中英术语对照表(全部源码核实)。**写任何 Logisim 面向用户的文档时必须套用 `中文（English）` 双语形式。**
@@ -92,7 +93,7 @@
 
 ## 5. 接下来要做的 ⏭️(按优先级)
 
-1. **里程碑 2 指引已写好(`plan/milestone2_guide.html`)** ✅ —— 内容 = 把 PulseOneShot 升级成真正的 Pulse 通道,都在 `apu.circ`。**下一步是用户照指引在 Logisim 里搭并实测**;下面是该指引覆盖的设计要点,供接手快速了解:
+1. **里程碑 2、3 指引均已写好** ✅(`plan/milestone2_guide.html` + `plan/milestone3_guide.html`) —— **下一步是用户照指引在 Logisim 里实搭并实测**:先在 `apu.circ` 搭 APU(M2),再在新文件 `cpu.circ` 搭 CPU(M3)、用 `项目→加载库` 把 APU 拉进来联调,2–4kHz 自动节拍下播 track00(出声、节奏稳、会循环)。下面是 M2 指引覆盖的设计要点,供接手快速了解(M3 要点见 §1.3):
    - 4 个 8-bit 寄存器接收 `$4000/$4002/$4003/$4015` 写入;
    - **用 Splitter（分线器）把 reg2(低8)+reg3(低3)拼成 11-bit timer** → `freq_pulse` ROM → 蜂鸣器（Buzzer）;
    - 音量/占空比/使能接好;
@@ -102,7 +103,7 @@
 
 2. **(可选)** 把"**时钟跑快 · BuzzerStress 靠 Splitter（分线器）取高位分频 · 真播放器靠 WAIT stall**"这条核心原理,补一个小框进 `milestone1_guide.html`。
 
-3. **里程碑 3+**:CPU(`cpu.circ`,五段 + WAIT-stall busy 状态机 + ALU + R0–R3 + MMIO)→ 顶层(`top.circ`,16-ROM MUX 切歌 + 播放/暂停/停止/上下一首 + 计时)。WAIT-stall 的 busy 状态机是唯一正确性陷阱,见 detailed_plan §5。
+3. **里程碑 4**:CPU 核心(五段 + WAIT-stall busy 状态机 + WRITE/END)已由 M3 指引覆盖;M4 = 补 **ALU 变速播放**(老师硬性要求「可控加减」,接 WAIT 装载路径算 `imm±tempo_delta`,顺手把 M3 的 +2 拍精确化、做快档下限钳位) + `LOADI/ADD/SUB/WRITEREG` + R0–R3 可视化 demo + **控制面板**(`top.circ`,16-ROM MUX 切歌 + 播放/暂停/停止/上下一首 + 计时) + LWAIT(0x2,2 字长等待,track00 用不到、长静音曲才需)。届时 `top.circ` 用 `项目→加载库` 正式组装 cpu/apu。
 
 4. **队友答辩防身指南(A/C/D 三份)** —— 用户要求但**明确说最后再做**,暂缓。
 
@@ -116,4 +117,4 @@
 - 不要改 `project_brief_v6.html` 的第 10 节(四人分工)。
 
 ---
-*更新于 2026-06-06。配套必读:`plan/milestone1_guide.html`、`plan/detailed_plan.html`、`memory/logisim-hardware-plan.md`、`.claude/skills/logisim-zh-terms/SKILL.md`。*
+*更新于 2026-06-08。配套必读:`plan/milestone2_guide.html`、`plan/milestone3_guide.html`、`plan/detailed_plan.html`、`memory/logisim-hardware-plan.md`、`.claude/skills/logisim-zh-terms/SKILL.md`。*

@@ -21,7 +21,13 @@
 # 公式（NTSC，CPU 时钟 1789773 Hz）：
 #   Pulse    f = 1789773 / (16 * (timer+1))
 #   Triangle f = 1789773 / (32 * (timer+1))      （三角比方波低八度）
-#   Noise    f = 1789773 / period_table[index]
+#   Noise    —— 不能用 NES 的 LFSR 时钟频率（见下）！
+#
+# ★ 噪声（重要修正 2026-06-09）：Logisim 蜂鸣器（Buzzer）的"白噪声"不是真白噪——它把一段
+#   长度=sampleRate/hz 的随机块【按 hz 周期性平铺】（见 ref/.../Buzzer.java 缓冲构建），
+#   听感是"基频=hz 的带噪嗡声"，hz 越高越像尖锐纯音。所以【绝不能】把 NES 的 LFSR 时钟
+#   (CPU/period，几百~几十万 Hz)当 hz 喂进去（否则刺耳）。改为把 16 档映射到一个"低而像
+#   噪声"的频率区间(对数等分)：index 0(最快/最亮)->NOISE_HZ_MAX、index 15->NOISE_HZ_MIN。
 # ============================================================================
 
 import os
@@ -33,7 +39,11 @@ CPU_HZ = 1789773.0          # NTSC 2A03 主频
 FREQ_MAX = 16383            # Buzzer Frequency 14-bit 上限
 PULSE_TIMER_BITS = 11       # timer 11-bit -> 2048 项
 NOISE_PERIODS = [4, 8, 16, 32, 64, 96, 128, 160,
-                 202, 254, 380, 508, 762, 1016, 2034, 4068]  # NTSC
+                 202, 254, 380, 508, 762, 1016, 2034, 4068]  # NTSC（仅作参考，不再直接算频率）
+# 噪声 16 档映射到的频率区间（见上方说明；蜂鸣器噪声=按 hz 平铺的随机块，必须用"低"频）。
+# index 0(最快/最亮)=上限、index 15(最慢/最闷)=下限。还嫌尖锐就把 MAX 调更低（如 250）。
+NOISE_HZ_MAX = 200.0   # 蜂鸣器上：hz>~200 平铺随机块周期太短→听出音高(变尖)，故压到 200
+NOISE_HZ_MIN = 40.0
 
 
 def clamp_hz(f):
@@ -68,7 +78,10 @@ def gen_pulse(divisor):
 
 
 def gen_noise():
-    return [clamp_hz(CPU_HZ / p) for p in NOISE_PERIODS]
+    # 对数等分映射到 [NOISE_HZ_MIN, NOISE_HZ_MAX]，index 0=最亮(高)、15=最闷(低)。
+    n = len(NOISE_PERIODS)                       # 16
+    r = (NOISE_HZ_MIN / NOISE_HZ_MAX) ** (1.0 / (n - 1))
+    return [clamp_hz(NOISE_HZ_MAX * (r ** i)) for i in range(n)]
 
 
 def main():

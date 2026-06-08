@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>里程碑 3 · 手把手施工指引 — 单周期五段 CPU（WAIT 停顿状态机）驱动 APU 播放 track00</title>
+<style>
+  :root{
+    --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
+    --line:rgba(80,60,40,.14); --text:#2d2520; --dim:#6a5a4c; --mute:#9a8a78;
+    --accent:#a8410d; --cyan:#2c6770; --red:#8b2820; --green:#4d6b2a; --purple:#5e3677;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+       font-family:"Segoe UI","Noto Sans SC",system-ui,sans-serif;font-size:15px;line-height:1.78;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 40px 120px}
+  header{border-bottom:2px solid var(--accent);padding-bottom:22px;margin-bottom:10px}
+  h1{font-size:29px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+  h1 .sub{display:block;font-size:15px;color:var(--dim);font-weight:400;margin-top:8px}
+  .meta{font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--mute);
+        letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:21px;margin:46px 0 12px;padding-top:10px;border-top:1px solid var(--line);
+     color:var(--accent)}
+  h2 .n{font-family:"JetBrains Mono",monospace;font-size:13px;color:#fff;background:var(--accent);
+        padding:2px 9px;border-radius:4px;margin-right:10px}
+  h3{font-size:17px;margin:24px 0 8px}
+  p{margin:9px 0}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.85em;background:var(--deep);
+       padding:1px 6px;border-radius:3px;color:var(--accent)}
+  strong{color:var(--accent)} em{color:var(--cyan);font-style:normal;font-weight:600}
+  ul,ol{margin:9px 0 14px 22px} li{margin-bottom:6px}
+  kbd{font-family:"JetBrains Mono",monospace;font-size:.8em;background:#fff;border:1px solid var(--line);
+      border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--text)}
+  .path{font-family:"JetBrains Mono",monospace;font-size:.85em;color:var(--purple);font-weight:600}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--panel);
+        border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--card);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:12px}
+  pre{background:#fffdf8;border:1px solid var(--line);border-left:3px solid var(--cyan);
+      padding:14px 18px;margin:14px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;
+      line-height:1.6;overflow-x:auto;border-radius:0 6px 6px 0;color:var(--text)}
+  .box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);
+       padding:13px 19px;margin:14px 0;border-radius:0 6px 6px 0}
+  .box.warn{border-left-color:var(--red);background:rgba(139,40,32,.03)}
+  .box.good{border-left-color:var(--green);background:rgba(77,107,42,.045)}
+  .box.tip{border-left-color:var(--purple);background:rgba(94,54,119,.04)}
+  .box .t{font-weight:700;margin-bottom:5px;color:var(--cyan)}
+  .box.warn .t{color:var(--red)} .box.good .t{color:var(--green)} .box.tip .t{color:var(--purple)}
+  .step{display:grid;grid-template-columns:42px 1fr;gap:16px;margin:16px 0;align-items:start}
+  .step .num{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;
+             display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;
+             font-weight:600;font-size:13px;flex-shrink:0;margin-top:2px}
+  .step .body{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 18px}
+  .step .body h4{font-size:15px;margin:0 0 4px;color:var(--text)}
+  .step .body p{margin:5px 0}
+  .tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10px;padding:2px 8px;
+       border-radius:3px;color:#fff;letter-spacing:.04em;vertical-align:middle}
+  .tag.do{background:var(--accent)} .tag.ok{background:var(--green)} .tag.q{background:var(--purple)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 22px;margin:18px 0}
+  .toc ol{margin:0;list-style:none;columns:2;column-gap:30px}
+  .toc a{color:var(--text);text-decoration:none} .toc a:hover{color:var(--accent)}
+  .toc .n{color:var(--accent);font-family:"JetBrains Mono",monospace;margin-right:7px}
+  .chk{list-style:none;margin-left:0}
+  .chk li{padding-left:30px;position:relative;margin-bottom:9px}
+  .chk li:before{content:"\2610";position:absolute;left:4px;color:var(--accent);font-size:18px;top:-2px}
+  footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--line);color:var(--mute);
+         font-family:"JetBrains Mono",monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="meta">Milestone 3 · 手把手 · 单人单刷 · Logisim Evolution v4.1.0</div>
+  <h1>里程碑 3：搭一颗会自己读谱的 CPU —— 让 track00 自动播起来
+    <span class="sub">里程碑 2 你<em>用手</em>按 NES 协议往 APU 写寄存器。本里程碑搭一颗<strong>单周期五段 CPU（IF/ID/EX/MEM/WB）</strong>，让它从 <code>track00.txt</code> 指令 ROM 里自动取指、译码，把里程碑 2 你手动做的那串「写 reg_id/value + WR」<strong>自动地、按谱地</strong>发出来。全程最硬的一块是 <code>WAIT</code> 的<strong>停顿（stall）状态机</strong>——这是整个项目<em>唯一</em>真正的正确性陷阱（<span class="path">plan/detailed_plan.html</span> §5），本文用 Logisim 源码逐行把它讲死。做完，接上里程碑 2 的 <code>APU</code>，<strong>真 NES 音乐就从蜂鸣器（Buzzer）里流出来了</strong>。</span>
+  </h1>
+</header>
+
+<div class="box good">
+  <div class="t">里程碑 2 的结论（已验收，作为本里程碑的地基）</div>
+  <ul style="margin-bottom:0">
+    <li><code>apu.circ</code> 里已有可用的 <code>APU</code> 顶层子电路：对外是<strong>写口</strong> <code>reg_id(4) / value(8) / WR(1)</code> + <code>frame_clk(1)</code>，内部 <code>RegFile</code>（输出脚 <code>regN_out</code>）+ 4 个通道 + 蜂鸣器（Buzzer）。手写寄存器能出 A4、能出和弦、能整体静音。</li>
+    <li>已确认的铁律（本里程碑继续遵守）：<strong>蜂鸣器（Buzzer）不能每个高速时钟拍都改输入</strong>；换音率压在音乐帧率 ~60Hz，由 §4.5 的按帧采样门控（<code>frame_clk</code>）落实。本里程碑会把 <code>frame_clk</code> 升级成 CPU 的 <strong><code>frame_commit</code></strong>（一帧寄存器写完、进入 <code>WAIT</code> 时打一拍），正是里程碑 2 预告的接法。</li>
+    <li>时钟铁律：<strong>始终用 &gt;1000Hz 的自动节拍（2–4kHz）</strong>；节奏靠 CPU 执行 <code>WAIT</code> 把快时钟<em>分频</em>到 ~60Hz 音乐帧率，不是靠慢时钟。</li>
+  </ul>
+</div>
+
+<div class="box tip">
+  <div class="t">开工前确认四件事</div>
+  <ul style="margin-bottom:0">
+    <li>里程碑 2 已完成：<code>apu.circ</code> 的 <code>APU</code> 子电路写口 <code>reg_id/value/WR/frame_clk</code> 工作正常。</li>
+    <li>本里程碑新建<strong>独立文件 <code>cpu.circ</code></strong>（角色 C）。CPU 与 APU 分文件，最后由 <code>top.circ</code> 用 <span class="path">项目 → 加载库（Project → Load Library）</span> 把两者拼起来；但<strong>本里程碑的播放测试，我们直接在 <code>cpu.circ</code> 里把 <code>apu.circ</code> 当库加载进来联调</strong>，省得来回切。</li>
+    <li>指令 ROM 用 <span class="path">script/out/track00.txt</span>（<code>地址位宽=16、数据位宽=16</code>）。已核对：track00 <strong>只用 <code>WAIT/WRITE/END</code> 三种指令、不含 <code>LWAIT</code></strong>，所以本里程碑的 CPU 只需译码这三条即可跑通整曲。</li>
+    <li>每一步都给了精确的 <em>库 / 部件 / 属性数值 / 引脚 / 连线</em>，菜单一律 <code>中文（English）</code> 双语。涉及 Logisim 行为的论断都标了源码出处。</li>
+  </ul>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><span class="n">0</span><a href="#s0">这一里程碑要搭什么（数据通路总览）</a></li>
+    <li><span class="n">1</span><a href="#s1">新增部件速查（计数器 / 译码器 / 逻辑门 / 位扩展器）</a></li>
+    <li><span class="n">2</span><a href="#s2">取指环路：PC 计数器 + track00 ROM</a></li>
+    <li><span class="n">3</span><a href="#s3">译码：分线器拆位 + 译码器出控制信号</a></li>
+    <li><span class="n">4</span><a href="#s4">★ WAIT 停顿状态机（本里程碑的命门）</a></li>
+    <li><span class="n">5</span><a href="#s5">WRITE 写脉冲 + END 循环</a></li>
+    <li><span class="n">6</span><a href="#s6">接上里程碑 2 的 APU，听 track00</a></li>
+    <li><span class="n">7</span><a href="#s7">里程碑 3 验收清单</a></li>
+    <li><span class="n">8</span><a href="#s8">下一里程碑预告（ALU 变速 + R0–R3 + 控制面板）</a></li>
+  </ol>
+</div>
+
+<!-- ===================== 0 ===================== -->
+<h2 id="s0"><span class="n">0</span>这一里程碑要搭什么</h2>
+
+<h3>从「手写寄存器」到「CPU 自己读谱」</h3>
+<p>里程碑 2 里你扮演 CPU：拨 <code>reg_id/value</code>、点 <code>WR</code>。本里程碑把这个「手」换成一颗 CPU——它<strong>每个时钟拍取一条 16 位指令</strong>，看高 4 位 opcode 决定干什么：<code>WRITE</code> 就把操作数送到 APU 写口并打一个写脉冲；<code>WAIT</code> 就<em>原地停顿</em>若干拍（这就是音乐的「时值/休止」）；<code>END</code> 就把 PC 归零、整曲循环。指令流来自 <code>track00.txt</code>，是离线工具链早就生成好的。</p>
+
+<div class="box"><div class="t">指令格式回顾（16 位定长，高 4 位 opcode；本里程碑只需这 3 条）</div>
+<table style="margin:6px 0">
+  <tr><th>opcode</th><th>助记</th><th>位布局 [15..0]</th><th>CPU 要做的事</th><th>track00 例</th></tr>
+  <tr><td><code>0x0</code></td><td>WAIT</td><td><code>0000 | imm12</code></td><td>原地停顿 imm 个时钟拍（PC 不动）</td><td><code>0020</code>=WAIT 32（满一空帧）、<code>001f</code>=WAIT 31</td></tr>
+  <tr><td><code>0x1</code></td><td>WRITE</td><td><code>0001 | reg4 | val8</code></td><td>APU[reg]=val，并打一个写脉冲</td><td><code>190f</code>=写 reg9=0x0f（开声道）</td></tr>
+  <tr><td><code>0xF</code></td><td>END</td><td><code>1111 | ────</code></td><td>PC 归零，循环本曲</td><td><code>f000</code>（在 ROM 末尾）</td></tr>
+</table>
+<p style="margin-bottom:0"><code>0x2 LWAIT</code>（长等待、2 字）等其余 opcode 本曲用不到，留给里程碑 4。<strong>回放永远只用 <code>WAIT/WRITE/END</code></strong>；<code>LOADI/ADD/SUB/WRITEREG</code> 是 ALU 指令，里程碑 4 才登场。</p></div>
+
+<h3>整体数据通路（五段，单周期、非流水线）</h3>
+<p>老师确认「五段」= 做到 <strong>IF/ID/EX/MEM/WB 五个组合阶段</strong>即可，<strong>不要求流水线</strong>（无需处理冒险）。所以这是一颗<em>单周期</em>机器：一条指令在一个时钟拍内走完五段（<code>WAIT</code> 例外，它要停顿多拍——这正是 §4 的状态机）。</p>
+<pre>
+IF   PC(16) ─► track00 ROM (addr16 / data16) ─► instr(16)
+ID   分线器拆位:  opcode=instr[15:12]   reg_id=instr[11:8]   val=instr[7:0]   imm=instr[11:0]
+     译码器(4→16): 第0路=is_wait   第1路=is_write   第15路=is_end
+EX   WAIT 状态机 = busy 触发器 + 16 位"向下计数器"  →  产生 stall（PC 停不停的总开关，见 §4）
+MEM  WRITE: reg_id / value 送 APU 写口,  WR = is_write 与 时钟 相与（写脉冲）
+     END  : PC 装 0
+WB   PC 更新 = stall ? 保持 : (is_end ? 0 : PC+1)   ←── 用一个"向上计数器"天然实现，无需额外加法器
+
+输出到 APU(里程碑 2):  reg_id(4)=instr[11:8]   value(8)=instr[7:0]   WR=is_write·clk   frame_commit=start·clk
+</pre>
+<div class="box tip"><div class="t">为什么用「计数器」而不是「寄存器 + 加法器」做 PC</div>
+<p style="margin-bottom:0">PC 的行为正好是 <code>stall?保持 : END?0 : +1</code>。Logisim 的 计数器（Counter）原生就有：<em>计数使能</em>（不使能=保持）、<em>加载</em>（装 0）、<em>向上计数</em>（+1）三件事。所以 <strong>PC = 一个 16 位 计数器（Counter）</strong> 就够了，省掉「寄存器 + 加法器 + 多路复用器」三件套。同理 <code>WAIT</code> 的倒计时也用一个<em>向下</em>计数器。这两个计数器是本里程碑的主角，§1 先把它的引脚按源码讲清。</p></div>
+
+<!-- ===================== 1 ===================== -->
+<h2 id="s1"><span class="n">1</span>新增部件速查（按 <code>ref/logisim-evolution</code> v4.1.0 源码核实）</h2>
+<p>里程碑 1/2 用过的 ROM / 寄存器（Register）/ 译码器（Decoder）/ Splitter（分线器）/ 常量（Constant）/ 引脚（Pin）/ 隧道（Tunnel）/ 时钟（Clock）这里不再赘述。下面三类是本里程碑的新主角。</p>
+
+<h3>1.1 计数器（Counter）—— PC 与 WAIT 倒计时都靠它</h3>
+<p>库：<span class="path">存储器 → 计数器（Memory → Counter）</span>。引脚名按源码 <code>std/memory/Counter.java</code> 的 <code>configurePorts()</code> 与 tooltip 核实（鼠标悬停即显中文提示，<em>别死记方位</em>）：</p>
+<table>
+  <tr><th>引脚 / 属性</th><th>源码 tooltip（中文）</th><th>本里程碑怎么用</th></tr>
+  <tr><td><strong>数据 D</strong>（输入）</td><td>输入：数据（用于加载到计数器的值）</td><td>PC：接常量 0（END 时装 0）；WAIT 计数器：接 imm 零扩展成 16 位</td></tr>
+  <tr><td><strong>计数值 Q</strong>（输出）</td><td>输出：当前计数值</td><td>PC 的 Q → ROM 地址；WAIT 计数器的 Q 一般不用（看 进位 即可）</td></tr>
+  <tr><td><strong>时钟</strong>（输入，带 ▷）</td><td>输入：时钟（在触发条件满足时更新计数值）</td><td>统一接 CPU 主时钟（Clock）。默认<strong>上升沿</strong>触发</td></tr>
+  <tr><td><strong>加载 Load</strong>（输入）</td><td>输入：加载（为 1 时在时钟触发时从数据输入加载）</td><td>PC：接 <code>is_end</code>；WAIT 计数器：接 <code>start</code>（见 §4）。<strong>加载优先于计数</strong></td></tr>
+  <tr><td><strong>计数使能 Enable</strong>（输入）</td><td>输入：计数使能（为 1 时按方向递增或递减）</td><td>PC：接 <code>¬stall</code>；WAIT 计数器：接 <code>en_count</code>。<strong>悬空=使能</strong>，所以<em>必须</em>明确接</td></tr>
+  <tr><td><strong>方向 Up/Down</strong>（输入）</td><td>输入：方向（为 1 时递增，为 0 时递减）</td><td>PC：接常量 <strong>1</strong>（向上 +1）；WAIT 计数器：接常量 <strong>0</strong>（向下 −1）。<em>悬空=向上</em></td></tr>
+  <tr><td><strong>清除 Clear</strong>（输入，"R"）</td><td>输入：清除（为 1 时<strong>异步</strong>将计数值清零）</td><td>接全局 <code>reset</code>。注意是异步清零（不等时钟）</td></tr>
+  <tr><td><strong>进位 Carry</strong>（输出）</td><td>输出：进位（递增到最大值或递减到 0 时为 1）</td><td><strong>★ WAIT 计数器的关键</strong>：向下计数时，<code>进位=1 ⟺ 当前值=0</code>，即 <code>at_zero</code></td></tr>
+  <tr><td>属性 <code>数据位宽（Data Bits）</code></td><td>—</td><td>PC 与 WAIT 计数器都设 <strong>16</strong></td></tr>
+  <tr><td>属性 <code>溢出时行为（Action On Overflow）</code></td><td>回绕/保持不变/继续计数/加载下一个值</td><td>WAIT 计数器设 <strong>保持不变（Stay at value）</strong>（到 0 就停在 0，不回绕到最大值）；PC 默认 回绕（Wrap around）即可</td></tr>
+</table>
+<div class="box good"><div class="t">★ 源码挖到的两个金点（让 WAIT 状态机大幅简化）</div>
+<p style="margin:0"><code>Counter.java</code> 的 <code>propagate()</code>（536–595 行）确认两件事，本里程碑直接吃红利：</p>
+<ul style="margin:6px 0 0">
+  <li><strong>进位（Carry）是组合输出、且向下计数时 = 「当前值是否为 0」</strong>：<code>carry = (newVal == goal)</code>，向下计数 <code>goal=0</code>。它不等时钟、随当前值实时变化。⟹ <em>不用再放比较器（Comparator）去判 0</em>，WAIT 计数器的 进位 脚就是现成的 <code>at_zero</code> 信号。</li>
+  <li><strong>加载优先于计数</strong>（550 行 <code>else if (ld)</code> 在计数分支之前）：同一拍 <code>Load=1</code> 时只装载、不计数。⟹ 装入 imm 的那一拍不会同时又减 1，时序干净。</li>
+</ul>
+<p style="margin:6px 0 0">另：<strong>清除（Clear）是异步的</strong>（536 行在时钟判定之外），所以 <code>reset</code> 一按立刻清零；<strong>计数使能/方向悬空都按"真"处理</strong>（541–542 行 <code>!= FALSE</code>），所以这两个脚<em>必须</em>明确接常量，否则行为不是你以为的那样。</p></div>
+
+<div class="box tip"><div class="t">怎么在画布上认计数器（Counter）的 8 个脚</div>
+<p style="margin-bottom:0">默认 <code>logisim_evolution</code> 外观下，符号<strong>左侧从上到下</strong>标着控制脚：<code>R</code>=清除、<code>M1[load]</code>=加载、<code>M3[up]/M4[down]</code>=方向、<code>G5</code>=计数使能、最下带三角(<code>2,3,5+/C6</code>)=时钟；<strong>数据 D</strong> 是左下那条宽总线(标 <code>1,6D</code>)、<strong>计数值 Q</strong> 是右下宽总线、<strong>进位 Carry</strong> 在右侧(标 <code>CT=0</code>)。（这些标注来自源码 <code>Counter.java</code> 的 <code>drawControl()</code>。）嫌符号大就把 <code>外观（Appearance）=经典（Classic）</code>：小方块，<code>D</code> 左、<code>Q</code> 右、时钟在底(带三角)、其余控制脚贴边。<strong>不管哪种外观，鼠标悬停弹出的中文 tooltip 才是认脚的硬依据</strong>，别凭方位猜。</p></div>
+
+<h3>1.2 译码器（Decoder）—— opcode 4 位 → 16 根 one-hot 控制线</h3>
+<p>库：<span class="path">复用器 → 译码器（Plexers → Decoder）</span>（里程碑 2 的 RegFile 已用过）。设 <code>选择位数（Select Bits）=4</code> ⟹ 16 路输出，选中那路=1、其余=0。本里程碑把 <code>opcode</code> 接到它的<em>选择</em>脚，只取<strong>第 0 路（is_wait）、第 1 路（is_write）、第 15 路（is_end）</strong>，其余悬空。<br>
+若它带<em>使能</em>脚（属性 <code>启用使能（Include Enable?）</code>）：把该属性设<strong>否</strong>，或给使能脚接 值=1 的 常量（Constant），否则整片输出全 0。</p>
+
+<h3>1.3 逻辑门（Gates）—— 拼 WAIT 状态机的几个控制信号</h3>
+<p>库：<span class="path">逻辑门（Gates）</span>。本里程碑只用三种、全是 1 位：<code>与门（AND Gate）</code>、<code>或门（OR Gate）</code>、<code>非门（NOT Gate）</code>。用途见 §4：<code>start = is_wait 与 ¬busy</code>、<code>en_count = busy 与 ¬at_zero</code>、<code>busy_next = start 或 en_count</code>，外加几个 <code>非门</code> 取反。</p>
+
+<h3>1.4 位扩展器（Bit Extender）—— 把 12 位 imm 补成 16 位</h3>
+<p>库：<span class="path">线路 → 位扩展器（Wiring → Bit Extender）</span>（源码 <code>std/wiring/BitExtender.java</code>）。属性：<code>输入位宽（Bit Width In）=12</code>、<code>输出位宽（Bit Width Out）=16</code>、<code>扩展类型（Extension Type）=全 0（Zero）</code>。把 <code>imm(12)</code> 接它的输入，输出就是高 4 位补 0 的 <code>imm(16)</code>，喂给 WAIT 计数器的 数据 脚。<br>
+<em>不想加这个部件也行：</em>用一个 Splitter（分线器）当合并器——<code>imm(12)</code> 进低 12 位、一个 值=0 的 4 位 常量（Constant）进高 4 位，合并成 16 位，效果相同。</p>
+
+<h3>1.5 信号清单速查（隧道名 → 位宽 / 来源 / 去向）</h3>
+<p>本里程碑全程用 隧道（Tunnel）按名字布线（省得拉长线）。下表是所有信号一览——<strong>照着接，最后逐个核对「每个隧道名有且仅有一个来源、至少一个去向」即可</strong>。带 ¬ 的都是 1 位取反。</p>
+<table>
+  <tr><th>隧道名</th><th>位宽</th><th>来源（谁驱动）</th><th>去向（谁用）</th></tr>
+  <tr><td><code>clk</code></td><td>1</td><td>输入 引脚（联调时接 时钟（Clock））</td><td>PC / WAITCNT / busy 的时钟脚；WR、frame_commit 的与门</td></tr>
+  <tr><td><code>reset</code></td><td>1</td><td>输入 引脚 / 按钮（Button）</td><td>PC / WAITCNT / busy 的清除脚</td></tr>
+  <tr><td><code>INSTR</code></td><td>16</td><td>ROM 数据 D</td><td>§3 第一个分线器</td></tr>
+  <tr><td><code>OPCODE</code></td><td>4</td><td>分线器1 取 [15:12]</td><td>译码器 选择脚</td></tr>
+  <tr><td><code>IMM</code></td><td>12</td><td>分线器1 取 [11:0]</td><td>位扩展器→WAITCNT 数据；分线器2</td></tr>
+  <tr><td><code>REGID</code></td><td>4</td><td>分线器2 取 [11:8]</td><td>输出脚 reg_id</td></tr>
+  <tr><td><code>VAL</code></td><td>8</td><td>分线器2 取 [7:0]</td><td>输出脚 value</td></tr>
+  <tr><td><code>IS_WAIT</code></td><td>1</td><td>译码器 第 0 路</td><td>start 与门</td></tr>
+  <tr><td><code>IS_WRITE</code></td><td>1</td><td>译码器 第 1 路</td><td>wr 与门</td></tr>
+  <tr><td><code>IS_END</code></td><td>1</td><td>译码器 第 15 路</td><td>PC 加载脚</td></tr>
+  <tr><td><code>AT_ZERO</code></td><td>1</td><td>WAITCNT 进位（Carry）</td><td>¬ → <code>NATZERO</code></td></tr>
+  <tr><td><code>BUSY</code></td><td>1</td><td>busy 触发器 Q</td><td>¬ → <code>NBUSY</code>；en_count 与门</td></tr>
+  <tr><td><code>NBUSY</code> / <code>NATZERO</code></td><td>1</td><td>非门(BUSY) / 非门(AT_ZERO)</td><td>start 与门 / en_count 与门</td></tr>
+  <tr><td><code>START</code></td><td>1</td><td>与门(IS_WAIT, NBUSY)</td><td>WAITCNT 加载；busy_next 或门；frame_commit 与门</td></tr>
+  <tr><td><code>ENCOUNT</code></td><td>1</td><td>与门(BUSY, NATZERO)</td><td>WAITCNT 计数使能；busy_next 或门</td></tr>
+  <tr><td><code>BUSYNEXT</code></td><td>1</td><td>或门(START, ENCOUNT)</td><td>busy 触发器 D；¬ → <code>NSTALL</code></td></tr>
+  <tr><td><code>NSTALL</code></td><td>1</td><td>非门(BUSYNEXT)</td><td>PC 计数使能</td></tr>
+</table>
+
+<!-- ===================== 2 ===================== -->
+<h2 id="s2"><span class="n">2</span>取指环路：PC 计数器 + track00 ROM</h2>
+<p>先把「会自己往前走、把指令一条条吐出来」的取指环路搭起来，单独验证它能正确扫 ROM。</p>
+
+<div class="step"><div class="num">F1</div><div class="body">
+  <h4>新建文件 <code>cpu.circ</code></h4>
+  <p>菜单 <span class="path">文件 → 新建（File → New）</span> 开一个新工程，<span class="path">文件 → 另存为…（File → Save As…）</span> 存成 <code>cpu.circ</code>（与 <code>apu.circ</code> 同目录，仓库根）。默认的 <code>main</code> 电路就当 CPU 的测试台用；<span class="path">项目 → 添加电路…（Project → Add Circuit…）</span> 另建一个名为 <code>CPU</code> 的子电路，双击进入——本里程碑的 CPU 都搭在这个 <code>CPU</code> 子电路里，<code>main</code> 留作联调测试台。</p>
+</div></div>
+<div class="step"><div class="num">F2</div><div class="body">
+  <h4>放 PC 计数器（Counter），16 位</h4>
+  <p><span class="path">存储器 → 计数器（Memory → Counter）</span>，<code>数据位宽（Data Bits）=16</code>。贴 <code>标签（Label）=PC</code>。<em>嫌大符号难认，把 <code>外观（Appearance）</code> 换成 经典（Classic）</em>更紧凑。先按下表把它的控制脚接成「能向前走」：</p>
+  <table style="margin:6px 0">
+    <tr><th>PC 计数器引脚</th><th>本步先接</th><th>说明</th></tr>
+    <tr><td>方向（Up/Down）</td><td>值=1 的 1 位 常量（Constant）</td><td>向上 +1。<strong>必接</strong>（悬空虽也=向上，但显式接更稳）</td></tr>
+    <tr><td>计数使能（Enable）</td><td>暂接 值=1 的 1 位 常量（Constant）</td><td>先让它每拍都走，验证取指；§4 再改接 <code>¬stall</code></td></tr>
+    <tr><td>加载（Load）</td><td>暂接 值=0 的 1 位 常量（Constant）</td><td>先不加载；§5 再改接 <code>is_end</code></td></tr>
+    <tr><td>数据（D）</td><td>值=0 的 16 位 常量（Constant）</td><td>END 时要装的循环地址 0</td></tr>
+    <tr><td>清除（Clear）</td><td>一个 1 位输入 引脚（Pin），标签 <code>reset</code></td><td>异步清零，回到曲首</td></tr>
+    <tr><td>时钟</td><td>一个 1 位输入 引脚（Pin），标签 <code>clk</code></td><td>上升沿。子电路里先用 引脚（Pin），联调时从外面喂 时钟（Clock）</td></tr>
+  </table>
+</div></div>
+<div class="step"><div class="num">F3</div><div class="body">
+  <h4>放 track00 指令 ROM</h4>
+  <p><span class="path">存储器 → ROM（Memory → ROM）</span>。<strong>务必先设</strong> <code>地址位宽（Address Bit Width）=16</code>、<code>数据位宽（Data Bit Width）=16</code>，<em>再</em>右键 <span class="path">加载映像…（Load Image…）</span> → <span class="path">script/out/track00.txt</span>（里程碑 1 的红框教训：先设位宽再加载，否则数据被截断）。<br>
+  把 <strong>PC 的 计数值 Q（16 位） → ROM 的地址 A</strong>；ROM 的数据 <code>D</code>(16 位) 就是当前指令 <code>instr</code>。给 <code>instr</code> 拉一根线、贴个 隧道（Tunnel）名 <code>INSTR</code> 方便后面到处取用。</p>
+</div></div>
+
+<div class="box good"><div class="t">先单测取指环路（还没有译码/停顿）</div>
+<p style="margin-bottom:0">打开 <span class="path">仿真 → 自动传播（Simulate → Auto-Propagate）</span>，用 手形工具（Poke Tool）把 <code>clk</code> 反复点 0→1→0……（或先接个 时钟（Clock） 手动单步）。你应看到 <strong>PC 每个上升沿 +1</strong>，<code>INSTR</code> 依次出现 <code>1b00, 1a00, 1800, …</code>（track00 开头那串 WRITE）。<code>reset</code> 置 1 再放开，PC 应跳回 0、<code>INSTR</code> 回到 <code>1b00</code>。这一步通过 = IF 段成立。</p></div>
+
+<!-- ===================== 3 ===================== -->
+<h2 id="s3"><span class="n">3</span>译码：分线器拆位 + 译码器出控制信号</h2>
+<p>把 16 位 <code>INSTR</code> 拆成 opcode / reg_id / val / imm，再用译码器把 opcode 变成「这是不是 WAIT / WRITE / END」的 one-hot 信号。</p>
+
+<div class="step"><div class="num">D1</div><div class="body">
+  <h4>第一个 Splitter（分线器）：拆出 opcode 和低 12 位</h4>
+  <p>放一个 Splitter（分线器）：<code>输入位宽（Bit Width In）=16</code>、<code>分支数（Fan Out）=2</code>。位分配：<strong>Bit 0–11 → 分支 0</strong>（这就是 <code>imm</code>，也是 reg+val 的合并），<strong>Bit 12–15 → 分支 1</strong>（这就是 <code>opcode</code>，4 位）。<code>INSTR</code> 接合并端。<br>
+  分支 1 引出 → 隧道（Tunnel）<code>OPCODE</code>(4)；分支 0 引出 → 隧道（Tunnel）<code>IMM</code>(12)。</p>
+</div></div>
+<div class="step"><div class="num">D2</div><div class="body">
+  <h4>第二个 Splitter（分线器）：把低 12 位再拆成 reg_id 和 val</h4>
+  <p>再放一个 Splitter（分线器）：<code>输入位宽=12</code>、<code>分支数=2</code>。<strong>Bit 0–7 → 分支 0</strong>（<code>val</code>，8 位）、<strong>Bit 8–11 → 分支 1</strong>（<code>reg_id</code>，4 位）。把 <code>IMM</code>(12) 接合并端。<br>
+  分支 0 → 隧道（Tunnel）<code>VAL</code>(8)；分支 1 → 隧道（Tunnel）<code>REGID</code>(4)。<em>（reg_id/val 只有 <code>WRITE</code> 用得到；<code>WAIT</code> 用的是整段 <code>IMM</code>。同一组低 12 位两种解读，互不影响。）</em></p>
+</div></div>
+<div class="step"><div class="num">D3</div><div class="body">
+  <h4>译码器（Decoder）：opcode → is_wait / is_write / is_end</h4>
+  <p><span class="path">复用器 → 译码器（Plexers → Decoder）</span>，<code>选择位数（Select Bits）=4</code>。把 <code>OPCODE</code>(4) 接<em>选择</em>脚。若有<em>使能</em>脚，属性 <code>启用使能（Include Enable?）=否</code>，或给它接 值=1 的 常量（Constant）。<br>
+  取三路输出贴隧道（Tunnel）：<strong>第 0 路 → <code>IS_WAIT</code></strong>、<strong>第 1 路 → <code>IS_WRITE</code></strong>、<strong>第 15 路 → <code>IS_END</code></strong>。其余 13 路悬空不接。</p>
+  <div class="box" style="margin:8px 0 0"><div class="t" style="font-size:13px">自检</div><p style="margin:0;font-size:13.5px">单步到一条 WRITE（如 <code>190f</code>），<code>OPCODE</code> 应=1、<code>IS_WRITE</code>=1，<code>REGID</code>=9、<code>VAL</code>=0f。走到一条 WAIT（如 <code>0020</code>），<code>OPCODE</code>=0、<code>IS_WAIT</code>=1、<code>IMM</code>=0x020=32。可以放几个 探针（Probe）盯着看。</p></div>
+</div></div>
+
+<div class="box good"><div class="t">把 track00 开头几条手工译一遍（对着自检）</div>
+<p>用 手形工具（Poke Tool） 单步 <code>clk</code>，对照下表确认拆位 / 译码正确（opcode = 高 4 位十六进制；track00 头 16 条全是 WRITE，第 17 条才是 WAIT）：</p>
+<table style="margin:6px 0">
+  <tr><th>PC</th><th>INSTR</th><th>OPCODE</th><th>拆出字段</th><th>含义</th></tr>
+  <tr><td>0</td><td><code>1b00</code></td><td>1 = WRITE</td><td>REGID=B, VAL=00</td><td>APU[0xB]=00（Triangle $400B）</td></tr>
+  <tr><td>1</td><td><code>1a00</code></td><td>1 = WRITE</td><td>REGID=A, VAL=00</td><td>APU[0xA]=00</td></tr>
+  <tr><td>2–12</td><td><code>1800…1c30</code></td><td>1 = WRITE</td><td>各 REGID/VAL</td><td>一串建音色的 WRITE</td></tr>
+  <tr><td>13</td><td><code>190f</code></td><td>1 = WRITE</td><td>REGID=9, VAL=0F</td><td><strong>reg9=0x0F → 开 4 个声道</strong></td></tr>
+  <tr><td>14</td><td><code>1108</code></td><td>1 = WRITE</td><td>REGID=1, VAL=08</td><td>APU[1]=08（Pulse1 $4001）</td></tr>
+  <tr><td>15</td><td><code>1508</code></td><td>1 = WRITE</td><td>REGID=5, VAL=08</td><td>APU[5]=08（Pulse2 $4005）</td></tr>
+  <tr><td>16</td><td><code>0010</code></td><td>0 = WAIT</td><td>IMM=0x010=16</td><td>停 16 拍（首帧 16 写 + 16 等 = 32）</td></tr>
+</table>
+<p style="margin-bottom:0">走到 <code>0010</code> 这条：<code>OPCODE</code> 翻成 0、<code>IS_WAIT</code>=1、<code>IMM</code>=16——就该轮到 §4 的停顿机接管了。（<code>1f00/1e00/1c30</code> 都是 WRITE：reg=F/E/C，不是 WAIT；别被 <code>1f</code> 这种短写法骗了——它若单独出现是 <code>0x001f</code>=WAIT 31，但带高位 <code>1</code> 的 <code>1f00</code> 是 WRITE。）</p></div>
+
+<!-- ===================== 4 ===================== -->
+<h2 id="s4"><span class="n">4</span>★ WAIT 停顿状态机 —— 本里程碑的命门</h2>
+
+<div class="box warn"><div class="t">陷阱本体：为什么不能「看到 WAIT 就装计数器」</div>
+<p>WAIT 要让 PC <em>原地不动</em>、同时一个计数器每拍 −1，减到头再放行。但 <code>WAIT</code> 那条指令在停顿期间<strong>一直躺在 PC 上</strong>（PC 没动），所以 <code>IS_WAIT</code> 会<strong>一直为 1</strong>。如果逻辑是「只要 <code>IS_WAIT</code>=1 就把计数器装成 imm」，那计数器<em>每一拍都被重新装满</em> ⟹ 永远减不到 0 ⟹ <strong>死循环、整曲卡在第一条 WAIT</strong>。这是 <span class="path">detailed_plan.html</span> §5 点名的<em>唯一</em>真正正确性陷阱。</p>
+<p style="margin-bottom:0"><strong>解法 = 一个 1 位 <code>busy</code> 标志</strong>，记住「这条 WAIT 我已经装过计数器了，现在是在倒数、不是刚遇到」。装载只在「刚遇到」那一拍发生，之后只倒数、不再装。</p></div>
+
+<h3>4.1 把状态机写成 5 个信号（先看清逻辑，再连线）</h3>
+<p>设 <code>busy</code> 是一个 1 位寄存器（触发器）的当前值，<code>at_zero</code> = WAIT 计数器的 进位（Carry）（=「当前计数值为 0」）。则：</p>
+<pre>
+is_wait   = 译码器第 0 路              （当前指令是不是 WAIT）
+at_zero   = WAIT计数器.进位(Carry)     （倒计时是否已到 0，组合输出，源码已验证）
+
+start     = is_wait  AND  (NOT busy)   （"刚遇到这条 WAIT"：装载就发生在这一拍）
+en_count  = busy     AND  (NOT at_zero)（"正在倒数且还没到 0"：这一拍要 −1）
+
+busy_next = start OR en_count          （下一拍 busy 的值 = busy 触发器的 D 输入）
+stall     = busy_next                  （★ 二者恒等！见下方推导。PC 停不停就看它）
+</pre>
+<div class="box good"><div class="t">★ 关键化简：<code>stall</code> 和 <code>busy_next</code> 是同一个信号</div>
+<p style="margin:0"><code>PC 该停</code>当且仅当：①这一拍刚遇到 WAIT（要开始等）<code>= start</code>，或②正在倒数还没到 0 <code>= en_count</code>。于是 <code>stall = start OR en_count</code>，<strong>和 <code>busy_next</code> 字面相同</strong>。所以你<em>只需算一根线</em>：<code>busy_next</code>。它同时当 busy 触发器的 <code>D</code>、又取反后当 PC 的 计数使能。少接一堆门。</p></div>
+
+<h3>4.2 连线（三个部件：WAIT 计数器、busy 触发器、几个门）</h3>
+<div class="step"><div class="num">W1</div><div class="body">
+  <h4>放 WAIT 计数器（Counter），16 位，向下、到 0 保持</h4>
+  <p><span class="path">存储器 → 计数器（Memory → Counter）</span>，<code>数据位宽=16</code>，<code>溢出时行为（Action On Overflow）=保持不变（Stay at value）</code>，标签 <code>WAITCNT</code>。接脚：</p>
+  <ul style="margin:4px 0 0">
+    <li>数据（D）：把 <code>IMM</code>(12) 经 §1.4 的 位扩展器（Bit Extender，12→16，全 0） 补成 16 位再接进来。</li>
+    <li>方向（Up/Down）：<strong>值=0 的 1 位 常量（Constant）</strong>（向下 −1）。</li>
+    <li>加载（Load）：接 <code>start</code>。</li>
+    <li>计数使能（Enable）：接 <code>en_count</code>。</li>
+    <li>时钟：接 <code>clk</code>；清除（Clear）：接 <code>reset</code>。</li>
+    <li>进位（Carry）：引出 → 隧道（Tunnel）<code>AT_ZERO</code>。计数值 Q 可不接（或接个 探针（Probe） 观察倒数）。</li>
+  </ul>
+</div></div>
+<div class="step"><div class="num">W2</div><div class="body">
+  <h4>放 busy 触发器（用 1 位 寄存器（Register））</h4>
+  <p><span class="path">存储器 → 寄存器（Memory → Register）</span>，<code>数据位宽=1</code>，标签 <code>busy</code>。<code>D</code> 接 <code>busy_next</code>、<code>Q</code> 引出 → 隧道（Tunnel）<code>BUSY</code>、时钟接 <code>clk</code>、<em>写使能（en）</em>接 值=1 的 1 位 常量（Constant）、<em>清除（clr）</em>接 <code>reset</code>。<br>
+  <em>（也可用 存储器 → D 触发器（Memory → D Flip-Flop）；1 位 寄存器（Register）和里程碑 2 一脉相承，这里沿用。）</em></p>
+</div></div>
+<div class="step"><div class="num">W3</div><div class="body">
+  <h4>用逻辑门拼出 4 个信号</h4>
+  <p>全部 1 位。建议用 隧道（Tunnel）取 <code>IS_WAIT / BUSY / AT_ZERO</code> 当输入，省得拉长线：</p>
+  <ul style="margin:4px 0 0">
+    <li><code>非门（NOT）</code>：<code>BUSY</code> → <code>NBUSY</code>；&nbsp; <code>AT_ZERO</code> → <code>NATZERO</code>。</li>
+    <li><code>与门（AND）</code>：<code>IS_WAIT, NBUSY</code> → <code>start</code>（隧道 <code>START</code>）。</li>
+    <li><code>与门（AND）</code>：<code>BUSY, NATZERO</code> → <code>en_count</code>（隧道 <code>ENCOUNT</code>）。</li>
+    <li><code>或门（OR）</code>：<code>START, ENCOUNT</code> → <code>busy_next</code>（隧道 <code>BUSYNEXT</code>）。把 <code>BUSYNEXT</code> 接回 W2 的 busy 触发器 <code>D</code>。</li>
+    <li><code>非门（NOT）</code>：<code>BUSYNEXT</code> → <code>NSTALL</code>（= <code>¬stall</code>）。</li>
+  </ul>
+  <p style="margin:6px 0 0">最后把 <strong>PC 计数器的 计数使能（Enable）由 §2 的临时常量改接 <code>NSTALL</code></strong>。这样：停顿时 PC 不走，倒数完那拍 <code>stall</code> 落 0、PC 才 +1。</p>
+</div></div>
+
+<h3>4.3 跑一遍看时序对不对（imm=3 的逐拍推演）</h3>
+<p>下表是「遇到一条 <code>WAIT 3</code>」的逐拍状态（× 表示该拍 PC 不动）。装载那拍计数器还显示旧值，下一拍才变成装入值——这是 寄存器/计数器 的边沿语义。</p>
+<table style="margin:6px 0">
+  <tr><th>拍</th><th>busy</th><th>WAITCNT 当前值</th><th>at_zero</th><th>start</th><th>en_count</th><th>stall(PC)</th><th>这一拍的边沿动作</th></tr>
+  <tr><td>c0</td><td>0</td><td>(旧)</td><td>—</td><td><strong>1</strong></td><td>0</td><td>× 停</td><td>装载 WAITCNT=3，busy→1</td></tr>
+  <tr><td>c1</td><td>1</td><td>3</td><td>0</td><td>0</td><td>1</td><td>× 停</td><td>−1 → 2</td></tr>
+  <tr><td>c2</td><td>1</td><td>2</td><td>0</td><td>0</td><td>1</td><td>× 停</td><td>−1 → 1</td></tr>
+  <tr><td>c3</td><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>× 停</td><td>−1 → 0</td></tr>
+  <tr><td>c4</td><td>1</td><td>0</td><td><strong>1</strong></td><td>0</td><td>0</td><td><strong>0 放行</strong></td><td>busy→0，<strong>PC+1</strong></td></tr>
+  <tr><td>c5</td><td>0</td><td>0</td><td>1</td><td colspan="3">下一条指令正常执行</td><td>取下一条</td></tr>
+</table>
+<div class="box"><div class="t">关于精确拍数：WAIT n 实际占用 n+2 拍（诚实交代，且不影响调速）</div>
+<p style="margin:0">如上：装载占 1 拍（c0）、归零观察占 1 拍（c4），中间倒数 n 拍，合计 <code>n+2</code> 拍。<strong>这不是 bug，是这种「装载 + 倒数 + 判零」结构的固有常数。</strong>为什么不影响节奏：编码器让<em>每一帧恰好一条 WAIT</em>（<code>WAIT = 32 − 本帧写入数</code>），所以这 <code>+2</code> 常数<strong>每帧均匀地多 2 拍</strong>，整体相当于帧预算从 32 变 34——而真正的播放速度本来就靠 <span class="path">仿真 → 自动节拍频率</span> 现场调（里程碑 2 的表），把节拍调高一点点就完全吸收了。<br>
+若日后想要<em>精确</em> n 拍：把装入值从 <code>imm</code> 改成 <code>imm−2</code> 即可——而里程碑 4 的 ALU 本来就要在这条装载路径上算 <code>imm ± tempo_delta</code>（变速播放），那时顺手减常数、做下限保护（钳到最小 1），一举两得。本里程碑先按 <code>imm</code> 直装，结构清楚。</p></div>
+
+<h3>4.4 三个部件接脚总表（照这张逐脚核对）</h3>
+<table>
+  <tr><th>部件 · 脚</th><th>接到</th></tr>
+  <tr><td><strong>WAITCNT</strong>（向下计数器）· 数据 D</td><td>位扩展器输出（<code>IMM</code> 补成 16 位）</td></tr>
+  <tr><td>WAITCNT · 加载 Load</td><td><code>START</code></td></tr>
+  <tr><td>WAITCNT · 计数使能 Enable</td><td><code>ENCOUNT</code></td></tr>
+  <tr><td>WAITCNT · 方向 Up/Down</td><td>值=0 的 1 位常量（向下）</td></tr>
+  <tr><td>WAITCNT · 时钟 / 清除</td><td><code>clk</code> / <code>reset</code></td></tr>
+  <tr><td>WAITCNT · 进位 Carry</td><td>→ <code>AT_ZERO</code>（属性 溢出时行为=保持不变）</td></tr>
+  <tr><td><strong>busy</strong>（1 位寄存器）· D / Q</td><td><code>BUSYNEXT</code> / → <code>BUSY</code></td></tr>
+  <tr><td>busy · 写使能 / 时钟 / 清除</td><td>值=1 常量 / <code>clk</code> / <code>reset</code></td></tr>
+  <tr><td><strong>PC</strong>（向上计数器）· 计数使能 Enable</td><td><code>NSTALL</code>（把 §2 的临时常量 1 改接这里）</td></tr>
+  <tr><td>PC · 加载 Load / 数据 D</td><td><code>IS_END</code>（§5 接）/ 值=0 的 16 位常量</td></tr>
+  <tr><td>PC · 方向 / 时钟 / 清除</td><td>值=1 常量（向上）/ <code>clk</code> / <code>reset</code></td></tr>
+</table>
+
+<div class="box"><div class="t">连续两条 WAIT（track00 里成片的 <code>0020</code>）也对</div>
+<p style="margin-bottom:0">空帧编码成 <code>WAIT 32</code>(<code>0020</code>)，会出现一串连着的 WAIT。验证它不出问题：一条 WAIT 在 c4 放行(<code>busy→0</code>、PC+1)，下一拍 PC 落在<em>下一条</em> WAIT 上、<code>busy=0</code> 且 <code>IS_WAIT=1</code> ⟹ <code>start</code> 再次为 1、重新装载 ⟹ 干净地接着等。<strong>每条 WAIT 恰好一次 <code>start</code> 脉冲 = 每帧一次 <code>frame_commit</code></strong>，正好对应一次按帧采样，不会漏也不会重。</p></div>
+
+<div class="box good"><div class="t">★ 用点测环境客观验证停顿（强烈推荐，别只靠耳朵）</div>
+<p>用里程碑间搭好的无界面 jar（见 <span class="path">plan/logisim_test_harness.html</span>）<strong>把 PC 是否真停够拍数打印出来看</strong>：</p>
+<ol style="margin:4px 0 0">
+  <li>临时在 <code>CPU</code> 子电路把 <code>PC</code> 引一个输出 引脚（Pin）。</li>
+  <li>在 <code>main</code> 放 时钟（Clock）→ <code>CPU.clk</code>；再放一个数时钟拍的 计数器（Counter）（<code>最大值=40、溢出时行为=保持不变</code>），它的 进位（Carry） 接一个<strong>标签为 <code>halt</code></strong> 的输出 引脚（Pin）——<code>--tty table</code> 靠这个 <code>halt</code> 收尾。</li>
+  <li>跑 <code>java -Djava.awt.headless=true -jar &lt;jar&gt; --tty table cpu.circ</code>，看 <code>PC</code> 列：前 16 拍每拍 +1（那串 WRITE），到第一条 <code>WAIT 16</code> 应<strong>原地不动约 18 拍</strong>（16+2），然后跳走——这就证明停顿机对了。</li>
+</ol>
+<p style="margin-bottom:0"><em>想让停顿更醒目</em>：临时把 ROM 内容（右键 <span class="path">编辑内容…（Edit Contents…）</span>）换成手编小程序 <code>1100 0003 1200 f000</code>（= WRITE、WAIT 3、WRITE、END），则 <code>PC</code> 在 1 处停约 5 拍（3+2）再走，一眼可辨。验完把 ROM 换回 <code>track00.txt</code>、删掉临时 PC 输出脚即可。</p></div>
+
+<!-- ===================== 5 ===================== -->
+<h2 id="s5"><span class="n">5</span>WRITE 写脉冲 + END 循环</h2>
+
+<h3>5.1 WRITE：给 APU 一个干净的「写脉冲」</h3>
+<div class="box warn"><div class="t">为什么不能把 <code>IS_WRITE</code> 直接当 WR 接给 APU</div>
+<p style="margin-bottom:0">里程碑 2 的 APU 写口里，<code>WR</code> 当的是寄存器的<strong>时钟</strong>，靠<em>上升沿</em>把 <code>value</code> 锁进选中寄存器。但 <code>IS_WRITE</code> 是个<em>电平</em>：连续两条 WRITE 时它会<strong>连着两拍都为 1、中间没有下降沿</strong> ⟹ 只有 1 个上升沿 ⟹ 第二条 WRITE 锁不进去。<br>
+<strong>修法：<code>WR = IS_WRITE 与 clk</code></strong>（用 与门（AND Gate） 把写信号和时钟相与）。这样每个 WRITE 拍里，<code>clk</code> 上升时 <code>WR</code> 跟着上升一次、下降时落下，<em>每拍一个干净脉冲</em>；连续 WRITE 也因为 <code>clk</code> 每拍都落一次而各自成沿。这是有意为之的「门控时钟脉冲」，仿真完全可靠。</p></div>
+<div class="step"><div class="num">M1</div><div class="body">
+  <h4>接出 WRITE 写口</h4>
+  <p>在 <code>CPU</code> 子电路放三个输出 引脚（Pin）：<code>类型（Type）=Output</code>，<code>reg_id</code>(4)、<code>value</code>(8)、<code>wr</code>(1)。<br>
+  • <code>reg_id</code> ← 隧道（Tunnel）<code>REGID</code>；&nbsp; <code>value</code> ← <code>VAL</code>。<br>
+  • <code>wr</code> ← 一个 与门（AND Gate）：输入 <code>IS_WRITE</code> 和 <code>clk</code>。</p>
+</div></div>
+
+<h3>5.2 END：PC 归零、整曲循环</h3>
+<div class="step"><div class="num">M2</div><div class="body">
+  <h4>把 PC 的「加载」接到 <code>IS_END</code></h4>
+  <p>回到 §2 的 PC 计数器，把它的 加载（Load）脚<strong>从临时的常量 0 改接 <code>IS_END</code></strong>（数据 D 仍是 16 位常量 0）。这样读到 <code>END(0xF000)</code> 那拍：加载优先 ⟹ <strong>PC ← 0</strong>，下一拍从曲首重放，无缝循环。<br>
+  <em>检查一致性：</em>END 不是 WAIT，<code>stall=0</code>、PC 的 计数使能=<code>NSTALL</code>=1，但加载优先于计数，所以装 0 而不是 +1。✔</p>
+</div></div>
+
+<h3>5.3 frame_commit：一帧写完打一拍，喂 APU 的按帧采样门</h3>
+<div class="step"><div class="num">M3</div><div class="body">
+  <h4>用 <code>start</code> 生成 <code>frame_commit</code></h4>
+  <p>里程碑 2 §4.5 的 <code>frame_clk</code> 当时是「自由跑的慢时钟」，有概率采到<em>半更新</em>的寄存器组合。现在有更好的脉冲源：<strong>CPU 每帧把本帧所有 WRITE 写完、正要进入 WAIT 的那一刻 = <code>start</code>（is_wait 且 ¬busy）</strong>。这一刻寄存器组已就绪，正适合采样进蜂鸣器（Buzzer）。<br>
+  再放一个 与门（AND Gate）：<code>frame_commit = START 与 clk</code>（和 WR 同理，做成干净脉冲）。引一个输出 引脚（Pin）<code>frame_commit</code>(1)。联调时把它接到 APU 的 <code>frame_clk</code>。</p>
+</div></div>
+<div class="box tip"><div class="t">CPU 子电路对外引脚清点</div>
+<p style="margin-bottom:0">到这里 <code>CPU</code> 子电路对外应有：<strong>输入</strong> <code>clk</code>(1)、<code>reset</code>(1)；<strong>输出</strong> <code>reg_id</code>(4)、<code>value</code>(8)、<code>wr</code>(1)、<code>frame_commit</code>(1)。（可选再引出 <code>PC</code>(16)、<code>INSTR</code>(16) 到 探针（Probe）/数码显示，答辩时好看。）存盘。</p></div>
+
+<!-- ===================== 6 ===================== -->
+<h2 id="s6"><span class="n">6</span>接上里程碑 2 的 APU，听 track00</h2>
+<p>CPU 子电路验完，回到 <code>cpu.circ</code> 的 <code>main</code> 当测试台，把 APU 拉进来联调。</p>
+
+<div class="step"><div class="num">P1</div><div class="body">
+  <h4>把 <code>apu.circ</code> 当库加载进来</h4>
+  <p>在 <code>cpu.circ</code> 工程里：<span class="path">项目 → 加载库 → Logisim-evolution 库…（Project → Load Library → Logisim-evolution Library…）</span>，选 <code>apu.circ</code>。左侧浏览器会多出 <code>apu</code> 库，里面有里程碑 2 的 <code>APU</code> 子电路。<em>（这正是最终 <code>top.circ</code> 组装 CPU+APU 的同一招，提前用上。）</em></p>
+</div></div>
+<div class="step"><div class="num">P2</div><div class="body">
+  <h4>在 <code>main</code> 里摆好 CPU + APU + 时钟</h4>
+  <p>各拖一个 <code>CPU</code>、<code>APU</code> 到 <code>main</code>。放一个 时钟（Clock）（<span class="path">线路 → 时钟（Wiring → Clock）</span>）接 <code>CPU.clk</code>；放一个 按钮（Button）（或 1 位 引脚（Pin））接 <code>CPU.reset</code>。<br>
+  <strong>把 <code>CPU.clk</code> 同时也接到 <code>APU</code> 的 <code>WR</code> 之外它需要的同步时钟吗？</strong>——不用。APU 的 <code>WR</code> 由 CPU 的 <code>wr</code> 提供（已是 <code>is_write·clk</code> 脉冲）；APU 内部按帧采样用的是 <code>frame_clk</code>，由 CPU 的 <code>frame_commit</code> 提供。CPU 和 APU 共享同一个 时钟（Clock）只是因为 <code>wr/frame_commit</code> 里那个 <code>clk</code> 就是它。</p>
+</div></div>
+<div class="step"><div class="num">P3</div><div class="body">
+  <h4>连 4 根线：CPU → APU</h4>
+  <table style="margin:6px 0">
+    <tr><th>CPU 输出</th><th>→ APU 输入</th><th>含义</th></tr>
+    <tr><td><code>reg_id</code>(4)</td><td><code>reg_id</code>(4)</td><td>写哪个 APU 寄存器</td></tr>
+    <tr><td><code>value</code>(8)</td><td><code>value</code>(8)</td><td>写入的字节</td></tr>
+    <tr><td><code>wr</code>(1)</td><td><code>WR</code>(1)</td><td>写脉冲（<code>is_write·clk</code>）</td></tr>
+    <tr><td><code>frame_commit</code>(1)</td><td><code>frame_clk</code>(1)</td><td>一帧写完采样进蜂鸣器（Buzzer）</td></tr>
+  </table>
+  <p style="margin:0">用 隧道（Tunnel）按名字连最省事。确认全程<strong>无红线（接错/悬空）、无灰线（位宽不符）</strong>。</p>
+</div></div>
+<div class="step"><div class="num">P4</div><div class="body">
+  <h4>开自动节拍，播放</h4>
+  <p>勾 <span class="path">仿真 → 自动传播（Simulate → Auto-Propagate）</span> 和 <span class="path">仿真 → 启用自动节拍（Simulate → Auto-Tick Enabled）</span>，<span class="path">仿真 → 自动节拍频率（Simulate → Auto-Tick Frequency）</span> 设 <strong>2kHz</strong>（不够顺再上 4kHz；<em>务必 &gt;1000Hz</em>，否则被 Windows 定时器精度卡到 ~32 拍/秒）。先按一下 <code>reset</code> 回到曲首再放开。<br>
+  <strong>应当听到 track00（Monitoring）正常播放</strong>：开头一串 WRITE 建好音色、<code>reg9=0x0f</code> 开声道后旋律响起，每帧 WAIT 维持音乐帧率，读到 END 自动循环。</p>
+</div></div>
+
+<div class="box good"><div class="t">判定标准（本里程碑「出音乐」的门槛）</div>
+<ul style="margin-bottom:0">
+  <li><strong>会自己跑</strong>：开自动节拍后 PC 持续推进、不卡在第一条 WAIT（= §4 状态机正确，没有死循环）。</li>
+  <li><strong>节奏稳</strong>：旋律不忽快忽慢；调 自动节拍频率 能整体变快/变慢（验证 WAIT 真的在分频）。</li>
+  <li><strong>音对</strong>：能听出是 track00 的曲子（不是噪声/乱跳），声道开关（<code>reg9</code>）生效。</li>
+  <li><strong>会循环</strong>：放到曲尾（END）能无缝从头再来；按 <code>reset</code> 立刻回曲首。</li>
+  <li>全程无红线 / 无灰线；存盘并备份 <code>cpu_m3.circ</code>。</li>
+</ul>
+<p style="margin:8px 0 0">四条都过 = <em>CPU 自动读谱 → APU 发声</em> 这条主链路打通。这是整个项目的<strong>保底验收 + 最大亮点</strong>。</p></div>
+
+<div class="box warn"><div class="t">卡顿/不出声的排查顺序</div>
+<p style="margin-bottom:0">① <strong>不出声但 PC 在走</strong>：多半是 <code>frame_commit</code> 没接对——没有按帧采样脉冲，蜂鸣器（Buzzer）前那排采样 寄存器（Register） 永不更新。先确认 <code>frame_commit</code> 在每帧有上升沿。② <strong>卡在第一条 WAIT</strong>：回 §4 检查 <code>busy</code> 触发器的 <code>D</code> 是否接了 <code>BUSYNEXT</code>、PC 计数使能是否改成了 <code>NSTALL</code>（别还连着常量 1）。③ <strong>第二条 WRITE 丢失/音色不对</strong>：检查 <code>wr</code> 是不是 <code>IS_WRITE·clk</code>（不是直接接 <code>IS_WRITE</code>）。④ <strong>整体卡顿/爆音</strong>：节拍 &gt;1000Hz 了吗？4 路同响吃力就先只开 1–2 路（里程碑 2 的降级策略），先保 CPU 正确。</p></div>
+
+<!-- ===================== 7 ===================== -->
+<h2 id="s7"><span class="n">7</span>里程碑 3 验收清单</h2>
+<ul class="chk">
+  <li><code>cpu.circ</code> 的 <code>CPU</code> 子电路：PC 计数器（Counter，16 位，向上）+ track00 ROM（16/16）取指环路，<code>reset</code> 能回曲首。</li>
+  <li>译码：两个 Splitter（分线器）拆出 <code>OPCODE/REGID/VAL/IMM</code>，译码器（Decoder，4→16）出 <code>IS_WAIT/IS_WRITE/IS_END</code>。</li>
+  <li>★ <code>WAIT</code> 停顿状态机：<code>busy</code> 触发器 + 向下 计数器（Counter） + <code>start/en_count/busy_next</code> 逻辑；<strong>不死循环、PC 在停顿后正确放行</strong>（按 §4.3 表自检）。</li>
+  <li><code>WRITE</code>：<code>wr = IS_WRITE·clk</code> 写脉冲；<code>END</code>：PC 加载 0 循环。</li>
+  <li><code>frame_commit = start·clk</code> 引出，联调时接 APU 的 <code>frame_clk</code>。</li>
+  <li>联调：加载 <code>apu.circ</code> 库，CPU 4 根线接 APU，2–4kHz 自动节拍下 <strong>track00 正常播放、节奏稳、会循环</strong>。</li>
+  <li>全程无红线 / 无灰线；已存盘并备份 <code>cpu_m3.circ</code>。</li>
+</ul>
+
+<div class="box good"><div class="t">做完这一步，你已经具备了什么</div>
+<p style="margin-bottom:0">一颗<strong>能自己读谱、按时值发声</strong>的单周期五段 CPU，加上里程碑 2 的 APU，<strong>真 NES 音乐已经在播了</strong>。这就是项目的核心骨架。剩下的都是<em>加分项与老师的硬性要求</em>：把 ALU 接进 WAIT 做可控变速、R0–R3 可视化、控制面板与 16 首切换——见下一里程碑。</p></div>
+
+<!-- ===================== 8 ===================== -->
+<h2 id="s8"><span class="n">8</span>下一里程碑预告</h2>
+<p><strong>里程碑 4 = ALU 变速播放 + R0–R3 + 控制面板 + 16 首切换</strong>（把 CPU 补成完整规格、满足老师硬性要求）：</p>
+<ul>
+  <li><strong>ALU 接进 WAIT 装载路径（老师硬性要求「可控加减」，不可砍）</strong>：在 §4 那条「<code>IMM</code> → WAIT 计数器数据脚」的路上插一个 ALU——<code>effective_wait = imm ± tempo_delta</code>，控制面板选 normal/slow/fast。这样<em>真实播放时 ALU 每帧都在参与节奏</em>，不是孤立 demo。顺便把 §4.3 的 <code>−2</code> 精确化也在这里做。</li>
+  <li><strong>LOADI / ADD / SUB / WRITEREG + R0–R3</strong>：补齐 ISA 的 ALU 指令与 4 个通用寄存器，配一段手写 demo ROM 现场显示 <code>R2=R0+R1</code>（16 进制数码显示），作为 ALU 可视化证明。</li>
+  <li><strong>控制面板</strong>（角色 A，<code>top.circ</code>）：播放/暂停（门控 CPU 时钟）、停止（reset + 写 reg9=0 静音）、上一首/下一首（4 位曲目计数器 → 16:1 多路复用器（Multiplexer） 选哪个 <code>trackNN.txt</code> ROM）、MM:SS 计时、到时自动下一首。</li>
+  <li><strong>LWAIT（0x2，2 字长等待）</strong>：本里程碑 track00 用不到；换某些长静音的曲子才需要，届时给状态机加一个「取下一字当 16 位等待数」的小分支。</li>
+</ul>
+<p>那一步开始把 <code>cpu.circ</code> 与 <code>apu.circ</code> 正式交给 <code>top.circ</code> 用 加载库 组装，单开一份文档细讲。</p>
+
+<footer>
+  Milestone 3 of N · 依据：Logisim Evolution v4.1.0 源码（Counter 端口/进位组合语义/加载优先/异步清除·Decoder·Register·Bit Extender·Gates，i18n 中英术语按 key 核实）· 资产：script/out/track00.txt（16/16，仅 WAIT/WRITE/END）· 配套：plan/milestone2_guide.html（APU 写口）、plan/detailed_plan.html（§3 ISA、§4 位宽、§5 WAIT-stall 状态机）
+</footer>
+
+</div>
+</body>
+</html>
