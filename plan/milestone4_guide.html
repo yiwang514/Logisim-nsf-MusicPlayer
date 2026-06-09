@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>里程碑 4 · 手把手施工指引 — ALU 变速播放（老师硬性要求）+ R0–R3 + 控制面板 / 多曲 / 计时</title>
+<title>里程碑 4 · 手把手施工指引 — ALU 变速播放（老师硬性要求）+ R0–R3 + 控制面板 / 多曲切换 / 通道开关</title>
 <style>
   :root{
     --bg:#fbf9f4; --panel:#ffffff; --card:#f7f3ec; --deep:#efe9dd;
@@ -74,7 +74,7 @@
 <header>
   <div class="meta">Milestone 4 · 手把手 · 单人单刷 · Logisim Evolution v4.1.0</div>
   <h1>里程碑 4：把 CPU 补成完整规格 —— ALU 变速播放 + R0–R3 + 控制面板
-    <span class="sub">里程碑 3 的 CPU 已能自动读谱、让 track00 出声。本里程碑补齐三件事：<strong class="">① ALU 接进 <code>WAIT</code> 变速播放（<span class="tag must">老师硬性要求 · 不可砍</span>「可控加减运算」必须参与播放主功能，而不只是孤立 demo）</strong>；② 通用寄存器 <code>R0–R3</code> + <code>LOADI/ADD/SUB/WRITEREG</code> + 可视化证明；③ 控制面板（<code>top.circ</code>）：播放/暂停/停止、上/下一首（16 曲 MUX）、MM:SS 计时。做完，这就是一台<strong>能演示、能讲、规格完整</strong>的播放器。</span>
+    <span class="sub">里程碑 3 的 CPU 已能自动读谱、让 track00 出声。本里程碑补齐三件事：<strong class="">① ALU 接进 <code>WAIT</code> 变速播放（<span class="tag must">老师硬性要求 · 不可砍</span>「可控加减运算」必须参与播放主功能，而不只是孤立 demo）</strong>；② 通用寄存器 <code>R0–R3</code> + <code>LOADI/ADD/SUB/WRITEREG</code> + 可视化证明；③ 控制面板（<code>top.circ</code>）：播放/暂停/停止、上/下一首（按实际曲数切换 ROM）、4 通道独立开关。做完，这就是一台<strong>能演示、能讲、规格完整</strong>的播放器。</span>
   </h1>
 </header>
 
@@ -91,9 +91,21 @@
   <div class="t">本里程碑的优先级（时间不够时照此取舍）</div>
   <ul style="margin-bottom:0">
     <li><span class="tag must">必做</span> <strong>§2 ALU 接入 WAIT 变速</strong> + <strong>§3 R0–R3 与 ALU 指令 + 可视化</strong>——这是老师点名的「可控加减运算」，<em>绝不可砍</em>，且必须能现场演示。</li>
-    <li><span class="tag bonus">加分</span> <strong>§4 控制面板 / 16 曲切换 / 计时</strong>——锦上添花。时间紧可退化为「手动换 ROM」。</li>
+    <li><span class="tag bonus">加分</span> <strong>§4 控制面板 / 多曲切换 / 通道开关</strong>——锦上添花。时间紧可退化为「手动换 ROM」。</li>
     <li><span class="tag opt">兼容</span> <strong>§5 LWAIT</strong>——只有当某首曲子出现 &gt;4095 拍的长静音才需要；track00 用不到。</li>
     <li>菜单一律 <code>中文（English）</code> 双语；涉及 Logisim 行为的论断标注了源码出处。</li>
+  </ul>
+</div>
+
+<div class="box warn">
+  <div class="t">★ 实搭避坑补充（M4 已用「脚本生成整套电路 + 无界面点测」跑通验证；以下是手搭时易踩、原文没点透的点）</div>
+  <ul style="margin-bottom:0">
+    <li><strong>两个译码器（Decoder）别搞混</strong>：opcode 译码用里程碑 3 那个 <code>选择位数（Select Bits）=4</code>（16 路）译码器（Decoder），直接取它的第 4/5/6/7 路当 <code>is_loadi/is_add/is_sub/is_writereg</code>；而写回用的「Rd→片选」是<strong>另一个新的</strong> <code>选择位数（Select Bits）=2</code>（4 路）译码器（Decoder）。两者选择位数、输出根数都不同，别共用。</li>
+    <li><strong>标签唯一性同样卡 R0–R3</strong>：4 个 寄存器（Register） 标签（Label） 叫 <code>R0–R3</code>，那么对外观测脚就得叫 <code>r0_out</code> 之类，<em>不能</em>也叫 <code>R0</code>（否则加载时标签被清，见里程碑 3 同款陷阱 <code>Circuit.isExistingLabel()</code>，不分大小写）。</li>
+    <li><strong>WRITEREG 要同时改 value 和 WR 两处</strong>：APU 的 <code>value</code> 不再直接接 <code>instr[7:0]</code>，而要先过一个 <code>is_writereg ? R[Rs] : instr[7:0]</code> 的 多路复用器（Multiplexer）；写脉冲 <code>WR</code> 也要对 <code>is_write 或 is_writereg</code> 都发（即 <code>(is_write∨is_writereg)·clk</code>）。漏掉任一处，WRITEREG 都写不进 APU。</li>
+    <li><strong>比较器（Comparator）数值类型</strong>：快档钳位比 <code>imm</code> 与 <code>delta</code>，二者都是小正数（&lt;0x8000），<code>无符号（Unsigned）</code>与<code>补码（2's Complement）</code>结果相同，默认即可；要严谨就显式设无符号。</li>
+    <li><strong>变速实测数值（delta=8）可当自检标准</strong>：normal 装 <code>imm</code>、slow 装 <code>imm+delta</code>、fast 装 <code>imm−delta</code> 且钳到 ≥1——实测 <code>WAIT 16</code> 三档分别装 <strong>16 / 24 / 8</strong>，<code>WAIT 5</code> 快档钳到 <strong>1</strong>（没有回绕成 65533）。</li>
+    <li><strong>CPU→APU 接线可「靠位宽自检」</strong>：APU 五个输入口位宽各不相同（<code>ch_mask</code>=4、<code>WR</code>=1、<code>reg_id</code>=4、<code>value</code>=8、<code>frame_clk</code>=1）。接错顺序必触发<em>位宽不匹配</em>（灰线）。连完只要全程无灰线，顺序基本就对了。</li>
   </ul>
 </div>
 
@@ -103,7 +115,7 @@
     <li><span class="n">1</span><a href="#s1">新增部件速查（运算器三件套 + MUX + 数码显示）</a></li>
     <li><span class="n">2</span><a href="#s2">★ ALU 接入 WAIT 变速播放（必做）</a></li>
     <li><span class="n">3</span><a href="#s3">R0–R3 + LOADI/ADD/SUB/WRITEREG + 可视化（必做）</a></li>
-    <li><span class="n">4</span><a href="#s4">控制面板 / 16 曲切换 / 计时（加分）</a></li>
+    <li><span class="n">4</span><a href="#s4">控制面板 / 多曲切换 / 通道开关（加分）</a></li>
     <li><span class="n">5</span><a href="#s5">LWAIT 长等待（兼容，可选）</a></li>
     <li><span class="n">6</span><a href="#s6">里程碑 4 验收清单</a></li>
     <li><span class="n">7</span><a href="#s7">收尾 &amp; 答辩要点</a></li>
@@ -122,7 +134,8 @@
                                └──── 多路复用器 按 tempo_mode 选 ┘
 
 另一处用同一类 ALU：通用寄存器 R0–R3 + 指令 LOADI/ADD/SUB/WRITEREG，配 数码显示 现场证明 R2 = R0 + R1。
-控制面板(top.circ)：播放/暂停(门控时钟) · 停止(复位+reg9=0) · 上/下一首(4 位曲号 → 16:1 MUX 选 ROM) · MM:SS 计时。
+控制面板(top.circ)：播放/暂停(门控时钟) · 停止(复位+reg9=0) · 上/下一首(曲号计数器 → N:1 MUX 选 ROM；4 首=2 位曲号+4:1) · 4 通道开关(ch_mask)+使能探针。
+（不做 MM:SS 实时计时：Buzzer 出声靠真实墙钟 Hz、CPU 节拍又是分频来的，二者对齐到"真实秒"既不稳也无演示价值，故略去。）
 </pre>
 <div class="box tip"><div class="t">两处 ALU 是否要合一？</div>
 <p style="margin-bottom:0"><code>detailed_plan</code> §5 的本意是「<strong>一个 ALU</strong>，主用途接 WAIT 变速、同时拿 R0–R3 demo 做可视化」。合一更优雅(输入再加一层 MUX 在 <code>imm/delta</code> 与 <code>Ra/Rb</code> 间选)，但对单人施工<strong>分开搭更清楚、也都能过验收</strong>：§2 的加/减专管播放调速(已满足「参与播放」)，§3 的 ALU 专做寄存器运算 demo。本指引按「分开」写，最后给一个「合一」的提示。</p></div>
@@ -153,7 +166,7 @@
     <td><strong>多路复用器<br>Multiplexer</strong></td>
     <td>复用器（Plexers）</td>
     <td>属性 <code>选择位数（Select Bits）=k</code> → <strong>2^k 个数据输入</strong> + 1 个<em>选择</em>脚 + 1 个输出；<code>数据位宽（Data Bits）</code>。（v4.x 默认<strong>无</strong>使能脚，省心。）</td>
-    <td>调速三选一（选择位=2）；R0–R3 读口（选择位=2，四选一）；16 曲选择（选择位=4，<code>数据位宽=16</code>）。</td>
+    <td>调速三选一（选择位=2）；R0–R3 读口（选择位=2，四选一）；多曲选择（4 首 ⇒ 选择位=2、4:1，<code>数据位宽=16</code>）。</td>
   </tr>
   <tr>
     <td><strong>16 进制数码显示<br>Hex Digit Display</strong></td>
@@ -268,26 +281,45 @@ f000   END</pre>
 </div></div>
 
 <!-- ===================== 4 ===================== -->
-<h2 id="s4"><span class="n">4</span>控制面板 / 16 曲切换 / 计时 <span class="tag bonus">加分</span></h2>
+<h2 id="s4"><span class="n">4</span>控制面板 / 多曲切换 / 通道开关 <span class="tag bonus">加分</span></h2>
 <p>这部分在 <strong><code>top.circ</code></strong> 里搭：用 <span class="path">项目 → 加载库 → Logisim-evolution 库…（Project → Load Library → Logisim-evolution Library…）</span> 把 <code>cpu.circ</code> 和 <code>apu.circ</code> 当库加载进来，再围着它们搭面板。</p>
+
+<div class="box good">
+  <div class="t">★ 架构要点（实搭验证过）：多曲切换 = 把指令 ROM 移到 CPU 外、走总线（标准 CPU↔存储器分离）</div>
+  <p style="margin:0 0 6px"><strong>原理（先讲清为什么必须这么做）</strong>：里程碑 3 的 CPU 把指令 ROM <em>内置</em>了（PC→内部 ROM→译码），一颗 CPU 死绑一首曲子。要切歌，就得让<strong>多个 ROM 共用同一个 PC 地址</strong>、再用一个 多路复用器（Multiplexer） 选出"当前这首"的指令。这逼着你<strong>把 ROM 搬到 CPU 外面</strong>，让 CPU 对外只暴露两条总线：<strong>地址总线</strong>（PC 输出 → 喂给所有 ROM 的地址脚）和<strong>指令总线</strong>（选中那首 ROM 的数据 → 回灌 CPU）。这正是教科书的 <strong>CPU↔存储器分离</strong>：CPU 是边界清晰的运算核心、存储器挂在外部总线上。而"多个 ROM + 曲号选择"实质就是 NES 卡带的 <strong>mapper 换页（bank-switching）</strong>——非常真实，答辩时是个亮点。</p>
+  <p style="margin:0 0 6px"><strong>具体做法</strong>：复制一份 CPU 子电路（取名 <code>CPU_EXT</code> 之类），把里面那颗指令 ROM <em>删掉</em>，改成：① 给 PC 计数器（Counter） 的 <em>计数值 Q</em> 引一个输出 引脚（Pin） <code>pcbus</code>(16)；② 新增一个输入 引脚（Pin） <code>instr</code>(16)，接到原先 ROM 数据脚所驱动的那根 <code>INSTR</code> 线上。其余（拆位译码 / WAIT 停顿机 / ALU 变速 / R0–R3）原封不动。于是 CPU 对外接口变成：<strong>入</strong> <code>clk / reset / tempo_mode / tempo_delta / instr</code>，<strong>出</strong> <code>pcbus / reg_id / value / wr / frame_commit</code>。<br><em>（标签别撞名：输出脚叫 <code>pcbus</code> 而不是 <code>pc</code>，以免和内部 计数器（Counter）<code>PC</code> 重名被清，见里程碑 3 同款陷阱。）</em></p>
+  <p style="margin:0 0 6px"><strong>top 里组装</strong>：加载库后放 <code>CPU_EXT</code> + <strong>N 个 ROM</strong>（N=本项目最终曲数 <strong>4</strong>；各 <code>地址位宽=16/数据位宽=16</code>，地址脚全接 <code>pcbus</code> 并联）+ 一个 多路复用器（Multiplexer，<code>选择位数（Select Bits）=⌈log₂N⌉</code>、<code>数据位宽（Data Bits）=16</code>，<em>选择</em>脚=曲号）→ 输出的 <code>instr</code> 回接 CPU 的 <code>instr</code> 入。<strong>4 首 ⇒ 选择位数=2、4:1 MUX、曲号是 2 位</strong>。</p>
+  <div class="box warn" style="margin:6px 0 0"><div class="t" style="font-size:13px">为什么不直接铺满 16 槽（踩过的坑）</div><p style="margin:0;font-size:13.5px">早期版本固定铺 16 个 ROM（4 位曲号、16:1 MUX）。问题有二：① <strong>16 个 4 万字的大 ROM 把 Logisim 拖得很卡</strong>、甚至影响后续曲目加载；② 实际只有几首，"下一首"会切到一长串空槽（静音）。所以最终<strong>按真实曲数 N 来定大小</strong>：曲号计数器位宽=⌈log₂N⌉、MUX 也只要 N 路。<strong>功能正确且轻量，远比塞满 16 首重要。</strong></p></div>
+  <p style="margin:6px 0 0"><strong>已验证参照</strong>：我按这套搭了 <code>cpu_pureAI.circ</code>（内含 <code>CPU_EXT</code> 子电路）+ <code>top_pureAI.circ</code>（用加载库装配两库、4 槽 ROM + 4:1 MUX、播放/暂停/停止/上下首/通道开关齐全），无界面实测 CPU_EXT 经总线取指正常、<code>WAIT 16</code> 精确停 18 拍。可对照着搭你自己的 <code>cpu.circ</code>/<code>top.circ</code>。</p>
+</div>
+
 <div class="step"><div class="num">C1</div><div class="body">
   <h4>播放 / 暂停（门控时钟）</h4>
   <p>放一个 D 触发器（D Flip-Flop）(<span class="path">存储器 → D 触发器</span>) 当 <code>running</code> 标志，用 按钮（Button） 翻转它。<strong>CPU 主时钟 = 母时钟 与 running</strong>(一个 与门（AND Gate))：<code>running=0</code> 时 CPU 时钟不跳、PC 冻结、音乐停在当前音。</p>
 </div></div>
 <div class="step"><div class="num">C2</div><div class="body">
   <h4>停止</h4>
-  <p>一个 停止 按钮（Button）：脉冲同时 ① 给 CPU 的 <code>reset</code>(PC→0)、② 强制 <code>reg9=0</code> 静音(可在 APU 的 <code>reg9</code> 通路上加一个「停止时清零」的门控，或直接给 RegFile 一个复位)。</p>
+  <p>停止 = 复位 + 静音。复位用前面的 <code>reset</code>（PC→0，已和上/下一首并进同一根 <code>rst</code>）；<strong>静音不要靠"复位 APU"</strong>——APU 子电路没有 reset 输入口，<code>reset</code> 只复位 CPU、碰不到 APU 内部的 RegFile，所以单按复位会让上个音一直长响。<strong>正确做法：把"停止"并进 C4 的 <code>ch_mask</code> 静音门控</strong>（见下方 C4：<code>active = run 与 非stop</code>，停止时 <code>ch_mask=0</code> 直接静音）。这样不必给 APU 加复位、也不必单独清 <code>reg9</code>。</p>
 </div></div>
 <div class="step"><div class="num">C3</div><div class="body">
-  <h4>上 / 下一首：4 位曲号 → 16:1 MUX 选 ROM</h4>
-  <p>放一个 4 位 计数器（Counter） 当<code>曲号</code>(0–15)，上一首/下一首两个 按钮（Button） 控制它 −1/+1(或两个计数器、或加减)。<br>
-  放 <strong>16 个 ROM</strong>(各 <code>地址位宽=16、数据位宽=16</code>)，分别 <span class="path">加载映像…（Load Image…）</span> <code>track00.txt … track15.txt</code>；<strong>16 个 ROM 的地址脚都接 PC</strong>(并联读)，16 个数据脚接一个 多路复用器（Multiplexer）(<code>选择位数=4</code>、<code>数据位宽=16</code>)，<em>选择</em>脚=<code>曲号</code>，输出 = 当前曲的 <code>instr</code> 喂给 CPU。切歌时给 <code>reset</code> 复位 PC。</p>
-  <div class="box warn" style="margin:8px 0 0"><div class="t" style="font-size:13px">16 个大 ROM 很吃内存</div><p style="margin:0;font-size:13.5px">最大曲约 4 万字 ×16。若 Logisim 吃力，先只装 2–4 首验证切歌逻辑，答辩时再视情况加载；功能正确比塞满 16 首重要。</p></div>
+  <h4>上 / 下一首：曲号计数器 → N:1 MUX 选 ROM（4 首 = 2 位曲号 + 4:1）</h4>
+  <p><strong>原理</strong>：用<em>一个</em>计数器（Counter）当"曲号"，两个按钮（Button）一个让它 +1（下一首）、一个让它 −1（上一首）。计数器（Counter）的"方向"脚（Up/Down）就是干这个的——巧用它，不必两个计数器、也不必加减器。</p>
+  <ol style="margin:4px 0 0">
+    <li><strong>两个按钮 → 一个时钟脉冲</strong>：放 下一首、上一首两个 按钮（Button）（隧道名 <code>NEXTB</code>/<code>PREVB</code>），用一个 或门（OR Gate） 把它俩并起来 → 接<strong>曲号计数器的时钟脚</strong>。含义："按了任意一个键，计数器就走一步"。</li>
+    <li><strong>方向脚决定 +1 还是 −1</strong>：把<strong>计数器的方向（Up/Down）脚直接接 <code>NEXTB</code></strong>。按"下一首"时 <code>NEXTB=1</code> ⇒ 方向=递增 ⇒ <strong>+1</strong>；按"上一首"时是 <code>PREVB</code> 触发的时钟、而 <code>NEXTB=0</code> ⇒ 方向=递减 ⇒ <strong>−1</strong>。</li>
+    <li><strong>到头回绕</strong>：曲号计数器 <code>数据位宽=⌈log₂N⌉</code>（4 首 ⇒ <strong>2 位</strong>）、<code>最大值（Maximum Value）=N−1</code>（4 首 ⇒ <strong>3</strong>）、<code>溢出时行为=回绕（Wrap around）</code>。于是曲号在 <code>0↔1↔2↔3</code> 循环、自动绕回，不越界。计数值 Q（=曲号）引出隧道 <code>TRACK</code>。</li>
+    <li><strong>N 个 ROM + N:1 MUX</strong>：放 <strong>N 个 ROM</strong>（各 <code>地址位宽=16、数据位宽=16</code>），分别 <span class="path">加载映像…（Load Image…）</span> <code>track00.txt … track0(N-1).txt</code>；<strong>所有 ROM 的地址脚都接 CPU 的 <code>pcbus</code></strong>（并联读），N 个数据脚接一个 多路复用器（Multiplexer）（<code>选择位数=⌈log₂N⌉</code>、<code>数据位宽=16</code>），<em>选择</em>脚=<code>TRACK</code>，输出 = 当前曲的 <code>instr</code> 回接 CPU 的 <code>instr</code> 入。</li>
+    <li><strong>切歌即复位（让新曲从头放）</strong>：把 CPU 的 <code>reset</code> 改成 <strong>手动复位按钮 <em>或</em> 切歌脉冲</strong>——即放一个 或门（OR Gate）：一个输入是原来的复位 引脚（Pin）/按钮（Button），另一个输入接 <code>TRKCLK</code>（=上一首∨下一首），输出才是真正接进 CPU 的 <code>rst</code>。这样按上/下一首的同一下，<code>TRKCLK</code> 拉高 → 既让曲号计数器 +1/−1、又异步清零 PC（<code>WAIT</code>/busy/R0–R3 一并复位），新曲从地址 0 干净开始。<em>（别让复位引脚和或门同时驱动 <code>rst</code> 那根线——会变成"双驱动"冲突；正确做法是复位引脚先进或门、或门输出再叫 <code>rst</code>。）</em></li>
+  </ol>
+  <p style="margin:6px 0 0"><strong>本项目最终 4 首</strong>：slot 0=monitoring、1=ano_bando、2=悠久之风（FF3 #30）、3=sparkling_daydream。所以是 <strong>2 位曲号 + 4 个 ROM + 4:1 MUX</strong>（不要铺 16 槽，原因见上方架构框的警告）。</p>
 </div></div>
 <div class="step"><div class="num">C4</div><div class="body">
-  <h4>MM:SS 计时 + 自动下一首</h4>
-  <p>「1 秒」从<strong>音乐帧</strong>来最准：里程碑 3 的 <code>frame_commit</code> 每帧一拍(~60Hz)。放一个 计数器（Counter）(<code>最大值=59</code>、<code>溢出时行为=回绕</code>)数 frame_commit，它的 进位（Carry） ≈ 每秒一拍 → 驱动「秒」计数器(<code>最大值=59</code>)，秒的进位驱动「分」计数器。各接 16 进制数码显示（Hex Digit Display） 或 探针（Probe） 显示 MM:SS。<br>
-  自动下一首：给「分/秒」配一个 比较器（Comparator） 比到设定上限(如 4:00) → 脉冲让<code>曲号</code> +1。<em>(注意 ~62.5 vs 60 的细微误差，见里程碑 2 §4.5；演示足够。)</em></p>
+  <h4>4 通道开关（ch_mask）+ 实时使能探针</h4>
+  <p>APU 子电路有一个 4 位输入口 <code>ch_mask</code>，<strong>每一位单独开/关一个声道</strong>（<code>bit0=Pulse1、bit1=Pulse2、bit2=Triangle、bit3=Noise</code>，位序与 NES <code>$4015</code> 一致，已对照 <code>apu.circ</code> 里 <code>ch_mask</code> 分线器（Splitter） 核实）。里程碑 3/4 调试时这里直接接 值=<code>0xF</code> 的 常量（Constant）（四路全开）；控制面板要把它换成<strong>四个可拨的开关</strong>，答辩时能现场单独静音某一路、对比音色。</p>
+  <p><strong>搭法</strong>：放 <strong>4 个 1 位输入 引脚（Pin）</strong>（命名 <code>ch_p1 / ch_p2 / ch_tri / ch_noise</code>，可设 <span class="path">外观（Appearance）</span> 当拨动开关用；把每个引脚的 <span class="path">初始值（Initial value）</span> 设为 <code>1</code>，这样上电默认四路全开），各引出一根 <code>CH0…CH3</code> 线；用一个<strong>反向使用的 分线器（Splitter）</strong>（<code>分支数（Fan Out）=4</code>、<code>输入位宽（Bit Width In）=4</code>、各分支按位 0→0/1→1/2→2/3→3 映射）把 4 根单 bit <em>合并</em>成 4 位的 <code>ch_mask</code> 总线，接 APU 的 <code>ch_mask</code> 入口。<em>（分线器在 Logisim 里是双向的：从「分」侧驱动、在「合」侧读出，就是合并器——这是标准接法。）</em></p>
+  <p><strong>实时显示</strong>：在 <code>CH0…CH3</code> 四根线上各挂一个 探针（Probe）（<code>基数（Radix）=二进制</code>），即可看到四个声道当前的 使能（enable）状态；停止/某路关掉时对应探针变 0。<br><strong>已验证参照</strong>：<code>top_pureAI.circ</code> 已按此实装（4 个 1 位开关 → 合并分线器 → <code>ch_mask</code>，外加 4 个探针），无界面 <code>--tty stats</code> 加载通过、位宽与 APU <code>ch_mask</code> 对齐无灰线。<em>（headless 自检模式下这里仍退回 <code>0xF</code> 常量，因为无界面无法拨开关。）</em></p>
+  <div class="box tip" style="margin:8px 0 0"><div class="t" style="font-size:13px">和「暂停 / 停止」联动：暂停、停止都要静音</div><p style="margin:0 0 6px;font-size:13.5px">只门控时钟（C1）会让 CPU 冻结、但 APU 仍把最后一个音一直「嗡」住，不像暂停。<strong>停止（reset）更要命</strong>：reset 只复位 CPU（PC/busy/寄存器），<em>根本没接到 APU</em>（APU 没有 reset 输入口），所以 APU 内部 RegFile 里上个音的频率/reg9 全留着、声道还开着 → 长响。</p><p style="margin:0;font-size:13.5px"><strong>统一修法</strong>：先算一个总开关 <code>active = run 与 (非 stop)</code>（一个 非门（NOT Gate） + 一个 与门（AND Gate）），再让<strong>每个声道位 = 对应开关 与 active</strong>（4 个 与门（AND Gate））。于是<strong>暂停（run=0）或停止（stop=1）任一发生，<code>ch_mask</code> 都被强制压成 0000 ⇒ 全部静音</strong>；恢复时按开关值还原。把那 4 个探针接在<strong>相与之后</strong>的线上，暂停/停止时探针一起变 0，直观反映"现在没在响"。<em>（切歌 next/prev 走的是另一条 <code>TRKCLK→reset</code>，不算进 <code>stop</code>，所以切歌仍带声音、从新曲头干净开始。开关引脚是输入、值由你拨，逻辑上无法回写引脚本身，所以是"门控其效果"而非真把引脚清零；效果等同。）</em></p></div>
+  <div class="box warn" style="margin:8px 0 0"><div class="t" style="font-size:13px">★ 关键陷阱：光把 <code>ch_mask</code> 压成 0 还不够——暂停会"嗡住"</div><p style="margin:0 0 6px;font-size:13.5px"><code>apu.circ</code> 里每个声道的<strong>蜂鸣器使能不是直接吃 <code>ch_mask</code>，而是先进一个寄存器（Register）<code>ENABLE_R</code>，由 <code>frame_clk</code> 打拍采样</strong>（<code>ch_mask位 → ENABLE_R.D →[frame_clk]→ ENABLE_R.Q → 蜂鸣器使能</code>）。也就是说<strong>静音只在"<code>frame_clk</code> 来一拍、把 <code>ch_mask=0</code> 锁进去"那一刻才生效</strong>。而暂停=门控 CPU 时钟（C1），<code>frame_clk</code>（来自 <code>frame_commit</code>）也跟着停了 ⇒ <code>ENABLE_R</code> 永远锁不进那个 0 ⇒ 上个音一直嗡（停止同理：若此时时钟也停了）。</p><p style="margin:0;font-size:13.5px"><strong>根因修法：暂停/停止时让 <code>frame_clk</code> 仍然在跳</strong>。给 APU 的 <code>frame_clk</code> 接 <code>frame_commit 或 (母时钟 mclk 与 非active)</code>（一个 非门 + 一个 与门 + 一个 或门）：<strong>播放时</strong>（active=1）=<code>frame_commit</code>（按帧干净采样，音质不变）；<strong>暂停/停止时</strong>（active=0）改吃自由跑的 <code>mclk</code>，于是 APU 仍每拍采样、把 <code>ch_mask=0</code> 锁进 <code>ENABLE_R</code> ⇒ 真静音；而 CPU/PC 仍被冻结 ⇒ 曲子停在原位。<em>（此时 CPU 不在写寄存器，<code>mclk</code> 重复采样的是稳定值，无毛刺。）已在 <code>top_pureAI.circ</code> 实装并无界面仿真验证：暂停时 <code>frame_clk</code> 随 <code>mclk</code> 持续 0/1 翻转。</em></p></div>
 </div></div>
 
 <!-- ===================== 5 ===================== -->
@@ -300,7 +332,8 @@ f000   END</pre>
 <ul class="chk">
   <li><span class="tag must">必做</span> ALU 接进 <code>WAIT</code>：<code>tempo_mode</code> 切 正常/慢/快 时，<strong>真实曲子的节奏随之变</strong>(快档不卡死)；加/减/钳位用 <code>--test-vector</code> 验证通过。</li>
   <li><span class="tag must">必做</span> R0–R3 + <code>LOADI/ADD/SUB/WRITEREG</code> + 读/写口 + 写使能译码搭好；demo 程序现场显示 <code>R2=R0+R1=8</code>(改 SUB 得 2)。</li>
-  <li><span class="tag bonus">加分</span> 控制面板：播放/暂停冻结、停止复位静音、上/下一首切 ROM、MM:SS 计时(自动下一首可选)。</li>
+  <li><span class="tag bonus">加分</span> 控制面板：播放/暂停冻结、停止复位静音、上/下一首切 ROM（按实际曲数，4 首=2 位曲号+4:1 MUX）。</li>
+  <li><span class="tag bonus">加分</span> 4 个声道开关（<code>ch_mask</code>）能单独开/关 Pulse1/Pulse2/Triangle/Noise，4 个 探针（Probe） 实时显示各路使能；现场单独静音某一路可闻、对应探针变 0。</li>
   <li><span class="tag opt">兼容</span>（若做）LWAIT 2 字长等待正确。</li>
   <li>全程<strong>无红线 / 无灰线</strong>；<code>top.circ</code> 用 加载库 正确组装 cpu+apu；已存盘并备份 <code>*_m4.circ</code>。</li>
 </ul>

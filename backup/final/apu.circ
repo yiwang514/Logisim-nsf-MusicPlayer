@@ -794,6 +794,12 @@ aa aa aa 4*a9 4*a8 4*a7 4*a6 5*a5
     <wire from="(990,250)" to="(1220,250)"/>
     <wire from="(990,250)" to="(990,410)"/>
   </circuit>
+  <circuit name="PulseOneShot">
+    <a name="appearance" val="logisim_evolution"/>
+    <a name="circuit" val="PulseOneShot"/>
+    <a name="circuitnamedboxfixedsize" val="true"/>
+    <a name="simulationFrequency" val="512.0"/>
+  </circuit>
   <circuit name="RegFile">
     <a name="appearance" val="logisim_evolution"/>
     <a name="circuit" val="RegFile"/>

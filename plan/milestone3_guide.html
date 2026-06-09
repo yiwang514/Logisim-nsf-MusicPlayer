@@ -99,6 +99,17 @@
   </ul>
 </div>
 
+<div class="box warn">
+  <div class="t">★ 实搭避坑补充（本设计已用「脚本生成整套电路 + 无界面点测」完整跑通验证；下面是手搭时最易踩、原文没点透的点）</div>
+  <ul style="margin-bottom:0">
+    <li><strong>标签唯一性陷阱（跨部件类型、不分大小写）</strong>：同一电路里<em>任意两个</em>部件（计数器（Counter）/寄存器（Register）/引脚（Pin）……都算）只要 标签（Label） 相同，Logisim 加载时会<strong>悄悄清空其中一个的标签</strong>（源码 <code>Circuit.isExistingLabel()</code>，<em>不区分大小写</em>）。后果很隐蔽：你给观测用的 输出 引脚（Pin） 起名 <code>PC</code>，而 PC 计数器（Counter）也叫 <code>PC</code> → 引脚标签被抹掉、调试时变量名对不上。<strong>对策</strong>：观测/输出脚一律取不撞名的名字（如 <code>pc_out</code>、<code>busy_out</code>），别和内部 计数器（Counter）<code>PC</code>/<code>WAITCNT</code>、寄存器（Register）<code>busy</code> 同名。（与里程碑 2 的 <code>regN_out</code> 是同一条铁律，这里再强调一次。）</li>
+    <li><strong>16 位 计数器（Counter）的 最大值（Maximum Value） 要对上位宽</strong>：新放的 计数器（Counter） 默认是 8 位、最大值（Maximum Value）=<code>0xFF</code>。把 数据位宽（Data Bits） 改成 16 后，<strong>务必确认 最大值（Maximum Value）= <code>0xFFFF</code></strong>（符号顶部显示 <code>CTR16</code> 而不是 <code>CTR DIV0x..</code> 才算设满）。否则 PC 会在地址 <code>0xFF</code> 处提前回绕、把曲子拦腰截断。WAITCNT 同样设 16 位。</li>
+    <li><strong>WAIT 计数器到 0 不会乱跳的真正原因</strong>：除了 §4.2 让你设 <code>溢出时行为（Action On Overflow）=保持不变（Stay at value）</code> 这道保险，逻辑上 <code>en_count = busy 且 ¬at_zero</code>——到 0 那一拍 <code>en_count</code> 自动落 0、计数器停在 0 不再递减，所以<em>本来就不会</em>从 0 回绕到 <code>0xFFFF</code>。这条让你搭时放心：状态机自带「到 0 即停」。</li>
+    <li><strong><code>WAIT n</code> 实占 <code>n+2</code> 拍——已逐拍实测吻合</strong>：实测 <code>WAIT 16</code>（track00 的 <code>0010</code>）PC 恰好原地停 <strong>18 拍</strong>、<code>WAIT 5</code> 停 <strong>7 拍</strong>，与 §4.3 的推演一字不差。搭完可拿它当硬指标自检（见 §4 末尾的点测环境框）。</li>
+    <li><strong>接上 CPU 后声音比纯 APU 更稳，是预期的（已印证）</strong>：CPU 用 <code>frame_commit</code>（本帧寄存器全部写完、正要进 <code>WAIT</code> 的那一刻才打一拍）去采样，<em>不会</em>采到「写到一半」的寄存器组合；而里程碑 2 那个自由跑的 <code>frame_clk</code> 偶尔会采到半成品。所以接上 CPU 后听感更干净、更稳——这正是 §5.3 那个设计的目的，已被实测印证。</li>
+  </ul>
+</div>
+
 <div class="toc">
   <ol>
     <li><span class="n">0</span><a href="#s0">这一里程碑要搭什么（数据通路总览）</a></li>
@@ -455,21 +466,21 @@ stall     = busy_next                  （★ 二者恒等！见下方推导。P
 </ul>
 
 <div class="box good"><div class="t">做完这一步，你已经具备了什么</div>
-<p style="margin-bottom:0">一颗<strong>能自己读谱、按时值发声</strong>的单周期五段 CPU，加上里程碑 2 的 APU，<strong>真 NES 音乐已经在播了</strong>。这就是项目的核心骨架。剩下的都是<em>加分项与老师的硬性要求</em>：把 ALU 接进 WAIT 做可控变速、R0–R3 可视化、控制面板与 16 首切换——见下一里程碑。</p></div>
+<p style="margin-bottom:0">一颗<strong>能自己读谱、按时值发声</strong>的单周期五段 CPU，加上里程碑 2 的 APU，<strong>真 NES 音乐已经在播了</strong>。这就是项目的核心骨架。剩下的都是<em>加分项与老师的硬性要求</em>：把 ALU 接进 WAIT 做可控变速、R0–R3 可视化、控制面板与多曲切换——见下一里程碑。</p></div>
 
 <!-- ===================== 8 ===================== -->
 <h2 id="s8"><span class="n">8</span>下一里程碑预告</h2>
-<p><strong>里程碑 4 = ALU 变速播放 + R0–R3 + 控制面板 + 16 首切换</strong>（把 CPU 补成完整规格、满足老师硬性要求）：</p>
+<p><strong>里程碑 4 = ALU 变速播放 + R0–R3 + 控制面板 + 多曲切换</strong>（把 CPU 补成完整规格、满足老师硬性要求）：</p>
 <ul>
   <li><strong>ALU 接进 WAIT 装载路径（老师硬性要求「可控加减」，不可砍）</strong>：在 §4 那条「<code>IMM</code> → WAIT 计数器数据脚」的路上插一个 ALU——<code>effective_wait = imm ± tempo_delta</code>，控制面板选 normal/slow/fast。这样<em>真实播放时 ALU 每帧都在参与节奏</em>，不是孤立 demo。顺便把 §4.3 的 <code>−2</code> 精确化也在这里做。</li>
   <li><strong>LOADI / ADD / SUB / WRITEREG + R0–R3</strong>：补齐 ISA 的 ALU 指令与 4 个通用寄存器，配一段手写 demo ROM 现场显示 <code>R2=R0+R1</code>（16 进制数码显示），作为 ALU 可视化证明。</li>
-  <li><strong>控制面板</strong>（角色 A，<code>top.circ</code>）：播放/暂停（门控 CPU 时钟）、停止（reset + 写 reg9=0 静音）、上一首/下一首（4 位曲目计数器 → 16:1 多路复用器（Multiplexer） 选哪个 <code>trackNN.txt</code> ROM）、MM:SS 计时、到时自动下一首。</li>
+  <li><strong>控制面板</strong>（角色 A，<code>top.circ</code>）：播放/暂停（门控 CPU 时钟）、停止（reset + 写 reg9=0 静音）、上一首/下一首（曲号计数器 → N:1 多路复用器（Multiplexer） 选哪个 <code>trackNN.txt</code> ROM；本项目最终 4 首=2 位曲号+4:1）、4 个声道独立开关（<code>ch_mask</code>）+ 使能探针。<em>（不做 MM:SS 实时计时：Buzzer 靠真实墙钟 Hz、节拍又是分频来的，对齐"真实秒"既不稳也无演示价值。）</em></li>
   <li><strong>LWAIT（0x2，2 字长等待）</strong>：本里程碑 track00 用不到；换某些长静音的曲子才需要，届时给状态机加一个「取下一字当 16 位等待数」的小分支。</li>
 </ul>
 <p>那一步开始把 <code>cpu.circ</code> 与 <code>apu.circ</code> 正式交给 <code>top.circ</code> 用 加载库 组装，单开一份文档细讲。</p>
 
 <footer>
-  Milestone 3 of N · 依据：Logisim Evolution v4.1.0 源码（Counter 端口/进位组合语义/加载优先/异步清除·Decoder·Register·Bit Extender·Gates，i18n 中英术语按 key 核实）· 资产：script/out/track00.txt（16/16，仅 WAIT/WRITE/END）· 配套：plan/milestone2_guide.html（APU 写口）、plan/detailed_plan.html（§3 ISA、§4 位宽、§5 WAIT-stall 状态机）
+  Milestone 3 of N · 依据：Logisim Evolution v4.1.0 源码（Counter 端口/进位组合语义/加载优先/异步清除·Decoder·Register·Bit Extender·Gates，i18n 中英术语按 key 核实）· 资产：script/out/track00.txt（16/16，仅 WAIT/WRITE/END）· 配套：plan/milestone2_guide.html（APU 写口）、plan/detailed_plan.html（§3 ISA、§4 位宽、§5 WAIT-stall 状态机）· <strong>本设计已由 <code>script/gen_cpu.py</code> 整套生成并经无界面点测（<code>--tty table</code>）实跑验证：译码序列、WAIT-stall（n+2 拍）、END 循环逐拍吻合，track00 经 APU 出声正常</strong>
 </footer>
 
 </div>
