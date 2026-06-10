@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单周期五段 CPU 说明 · Logisim NSF Music Player</title>
+<style>
+  :root {
+    --bg: #fbf9f4;
+    --panel: #fff;
+    --card: #f7f3ec;
+    --deep: #efe9dd;
+    --line: rgba(80, 60, 40, 0.16);
+    --line-strong: rgba(80, 60, 40, 0.32);
+    --text: #2d2520;
+    --dim: #6a5a4c;
+    --mute: #9a8a78;
+    --accent: #a8410d;
+    --cyan: #2c6770;
+    --green: #4d6b2a;
+    --red: #8b2820;
+    --purple: #5e3677;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    line-height: 1.75;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 44px 88px;
+  }
+  header {
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: 28px;
+  }
+  .meta {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 12px;
+    color: var(--mute);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 34px;
+    line-height: 1.28;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-size: 24px;
+    margin: 38px 0 14px;
+    color: var(--accent);
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+  }
+  h3 { font-size: 19px; margin: 24px 0 10px; }
+  p { margin: 10px 0; }
+  strong { color: var(--accent); }
+  em { color: var(--cyan); font-style: normal; font-weight: 700; }
+  code {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 0.9em;
+    background: var(--deep);
+    color: var(--accent);
+    padding: 1px 7px;
+    border-radius: 4px;
+  }
+  .lead {
+    font-size: 18px;
+    color: var(--dim);
+    max-width: 920px;
+  }
+  .box {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--cyan);
+    border-radius: 0 8px 8px 0;
+    padding: 18px 24px;
+    margin: 18px 0;
+  }
+  .box.good { border-left-color: var(--green); background: rgba(77, 107, 42, 0.045); }
+  .box.warn { border-left-color: var(--red); background: rgba(139, 40, 32, 0.035); }
+  .box .title {
+    font-weight: 800;
+    color: var(--cyan);
+    margin-bottom: 6px;
+  }
+  .box.good .title { color: var(--green); }
+  .box.warn .title { color: var(--red); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 16px 0 22px;
+    font-size: 15px;
+  }
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  tr:last-child td { border-bottom: 0; }
+  th {
+    background: var(--card);
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  ul { margin: 10px 0 16px 22px; padding: 0; }
+  li { margin: 6px 0; }
+  .tag {
+    display: inline-block;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: #fff;
+    background: var(--accent);
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-right: 8px;
+  }
+  .tag.green { background: var(--green); }
+  .tag.cyan { background: var(--cyan); }
+  pre {
+    margin: 14px 0 18px;
+    padding: 16px 20px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    background: var(--panel);
+    border-radius: 0 8px 8px 0;
+    overflow-x: auto;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 14px 0 24px;
+  }
+  .sbox { fill: #fff; stroke: var(--line-strong); stroke-width: 1.5; }
+  .sacc { fill: rgba(168, 65, 13, 0.06); stroke: var(--accent); stroke-width: 1.8; }
+  .scyan { fill: rgba(44, 103, 112, 0.06); stroke: var(--cyan); stroke-width: 1.8; }
+  .sgreen { fill: rgba(77, 107, 42, 0.07); stroke: var(--green); stroke-width: 1.8; }
+  .spurple { fill: rgba(94, 54, 119, 0.06); stroke: var(--purple); stroke-width: 1.8; }
+  .txt { font-family: "Segoe UI", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif; fill: var(--text); font-weight: 700; }
+  .sub { font-family: Consolas, "Cascadia Mono", monospace; fill: var(--dim); font-size: 13px; }
+  .wire { stroke: var(--dim); stroke-width: 2; fill: none; marker-end: url(#arr); }
+  footer {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--mute);
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="meta">CPU Explanation · Single-Cycle Five Logical Stages</div>
+    <h1>我们的 CPU 能否满足“单周期五段 CPU”的设计要求？</h1>
+    <p class="lead">
+      结论：可以，但要准确表述为
+      <strong>单周期五段 CPU + WAIT 多周期扩展</strong>。普通指令在一个时钟周期内走完
+      IF / ID / EX / MEM / WB；为了音乐节奏，<code>WAIT</code> 指令会故意暂停 PC 若干拍。
+    </p>
+  </header>
+
+  <div class="box good">
+    <div class="title">一句话结论</div>
+    <p>
+      当前 <code>cpu.circ</code> 不是通用 MIPS/RISC CPU，而是为 NSF 播放器定制的 16-bit ISA CPU。
+      它仍然具备单周期 CPU 的五个逻辑阶段：取指、译码、执行、访存、写回。
+      区别在于：它的 MEM 阶段主要访问 <strong>APU 内存映射寄存器</strong>，而不是普通数据 RAM。
+    </p>
+  </div>
+
+  <h2>1. 标准五段如何对应到本项目 CPU</h2>
+  <table>
+    <tr>
+      <th>标准阶段</th>
+      <th>标准含义</th>
+      <th>本项目中的实现</th>
+      <th>对应信号 / 部件</th>
+    </tr>
+    <tr>
+      <td><strong>IF</strong><br>取指令</td>
+      <td>根据 PC 地址从指令存储器取出一条指令。</td>
+      <td>CPU 输出 <code>pcbus</code>，顶层 <code>top.circ</code> 用它访问曲目 ROM，再把 16-bit 指令送回 <code>instr</code>。</td>
+      <td>PC 计数器（Counter）、<code>pcbus</code>、<code>instr</code>、曲目 ROM</td>
+    </tr>
+    <tr>
+      <td><strong>ID</strong><br>指令译码</td>
+      <td>由指令生成控制信号，明确这条指令要做什么。</td>
+      <td>固定 16-bit 指令用 Splitter（分线器）拆出 <code>opcode</code>、<code>reg_id</code>、<code>value</code>、<code>imm</code> 等字段，再产生 <code>IS_WAIT</code>、<code>IS_ADD</code>、<code>IS_SUB</code> 等控制信号。</td>
+      <td>Splitter（分线器）、译码器（Decoder）、控制信号</td>
+    </tr>
+    <tr>
+      <td><strong>EX</strong><br>执行</td>
+      <td>对操作数进行运算。</td>
+      <td>ALU 完成 <code>ADD</code>/<code>SUB</code>；WAIT 装载路径计算 <code>imm ± tempo_delta</code>；WAIT 状态机判断是否暂停 PC。</td>
+      <td>加法器（Adder）、减法器（Subtractor）、比较器（Comparator）、多路复用器（Multiplexer）、<code>WAITCNT</code>、<code>busy</code></td>
+    </tr>
+    <tr>
+      <td><strong>MEM</strong><br>存储器访问</td>
+      <td>将数据写入存储器，或从存储器读出数据。</td>
+      <td><code>WRITE</code>/<code>WRITEREG</code> 在这一阶段访问 APU 写口，把 <code>reg_id</code> 和 <code>value</code> 写入 APU RegFile。这里属于内存映射 I/O。</td>
+      <td><code>reg_id</code>、<code>VALUE_OUT</code>、<code>wr</code>、<code>frame_commit</code>、APU RegFile</td>
+    </tr>
+    <tr>
+      <td><strong>WB</strong><br>写回</td>
+      <td>将运算结果写回寄存器。</td>
+      <td>更新 PC；把 ALU 结果写回 R0-R3；更新 <code>WAITCNT</code> 和 <code>busy</code> 等状态元件。</td>
+      <td>R0-R3 寄存器（Register）、PC 计数器（Counter）、<code>WAITCNT</code>、<code>busy</code></td>
+    </tr>
+  </table>
+
+  <svg viewBox="0 0 980 250" role="img" aria-label="本项目 CPU 的五段逻辑流程">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#6a5a4c"/>
+      </marker>
+    </defs>
+    <rect class="sacc" x="24" y="52" width="160" height="120" rx="8"/>
+    <text class="txt" x="104" y="92" text-anchor="middle" font-size="22">IF</text>
+    <text class="sub" x="104" y="122" text-anchor="middle">PC → ROM</text>
+    <text class="sub" x="104" y="145" text-anchor="middle">取 instr</text>
+    <path class="wire" d="M184,112 H220"/>
+
+    <rect class="scyan" x="220" y="52" width="160" height="120" rx="8"/>
+    <text class="txt" x="300" y="92" text-anchor="middle" font-size="22">ID</text>
+    <text class="sub" x="300" y="122" text-anchor="middle">Splitter</text>
+    <text class="sub" x="300" y="145" text-anchor="middle">opcode/control</text>
+    <path class="wire" d="M380,112 H416"/>
+
+    <rect class="spurple" x="416" y="52" width="160" height="120" rx="8"/>
+    <text class="txt" x="496" y="92" text-anchor="middle" font-size="22">EX</text>
+    <text class="sub" x="496" y="122" text-anchor="middle">ALU / WAIT</text>
+    <text class="sub" x="496" y="145" text-anchor="middle">状态判断</text>
+    <path class="wire" d="M576,112 H612"/>
+
+    <rect class="sgreen" x="612" y="52" width="160" height="120" rx="8"/>
+    <text class="txt" x="692" y="92" text-anchor="middle" font-size="22">MEM</text>
+    <text class="sub" x="692" y="122" text-anchor="middle">APU write bus</text>
+    <text class="sub" x="692" y="145" text-anchor="middle">MMIO 写寄存器</text>
+    <path class="wire" d="M772,112 H808"/>
+
+    <rect class="sbox" x="808" y="52" width="148" height="120" rx="8"/>
+    <text class="txt" x="882" y="92" text-anchor="middle" font-size="22">WB</text>
+    <text class="sub" x="882" y="122" text-anchor="middle">PC / R0-R3</text>
+    <text class="sub" x="882" y="145" text-anchor="middle">状态写回</text>
+  </svg>
+
+  <h2>2. 为什么 MEM 阶段写 APU 也算“存储器访问”</h2>
+  <p>
+    标准 CPU 课程里，MEM 阶段常被讲成“访问 RAM”。但真实 CPU 里，MEM 阶段也可以访问
+    <strong>内存映射 I/O</strong>。NES 2A03 正是这种设计：CPU 写 <code>$4000-$4017</code>
+    不是在写普通 RAM，而是在写 APU 的硬件寄存器。
+  </p>
+
+  <pre>CPU 执行 WRITE
+  -> MEM 阶段输出 reg_id / value / wr
+  -> APU RegFile 被写入
+  -> APU 通道把寄存器解释成频率、音量、占空比、使能
+  -> 蜂鸣器（Buzzer）发声</pre>
+
+  <div class="box">
+    <div class="title">答辩时的推荐说法</div>
+    <p>
+      本 CPU 的 MEM 阶段访问的不是普通数据 RAM，而是 APU 的内存映射寄存器组。
+      这和真实 NES 的 CPU/APU 交互方式一致：CPU 通过写固定地址控制声音硬件。
+    </p>
+  </div>
+
+  <h2>3. 唯一要主动说明：WAIT 是多周期扩展</h2>
+  <p>
+    如果严格说“所有指令都一个周期”，那不准确。我们的 <code>WRITE</code>、<code>ADD</code>、
+    <code>SUB</code>、<code>WRITEREG</code>、<code>END</code> 等普通指令可以按单周期完成；
+    但 <code>WAIT</code> 是播放器为了节奏控制专门加入的多周期指令。
+  </p>
+
+  <table>
+    <tr><th>指令类型</th><th>执行方式</th><th>原因</th></tr>
+    <tr>
+      <td><code>WRITE</code> / <code>ADD</code> / <code>SUB</code> / <code>WRITEREG</code></td>
+      <td>一个时钟周期内走完 IF/ID/EX/MEM/WB。</td>
+      <td>符合单周期 CPU 的基本要求。</td>
+    </tr>
+    <tr>
+      <td><code>WAIT n</code></td>
+      <td>第一拍装载 <code>WAITCNT</code>，随后 <code>busy</code> 保持 PC 不变，倒数到 0 再放行。</td>
+      <td>音乐必须有时间间隔；否则 ROM 会被高速扫完，节奏不存在。</td>
+    </tr>
+  </table>
+
+  <div class="box warn">
+    <div class="title">不要这样说</div>
+    <p>“我们的所有指令都严格一个周期完成。”</p>
+    <div class="title">应该这样说</div>
+    <p>
+      “我们的 CPU 是单周期五段结构，普通指令一个周期完成；为了音乐播放，额外实现了
+      <code>WAIT</code> 多周期停顿指令，让 PC 按节奏暂停。”
+    </p>
+  </div>
+
+  <h2>4. 对照老师给出的五段定义</h2>
+  <table>
+    <tr><th>老师定义</th><th>本项目是否满足</th><th>说明</th></tr>
+    <tr><td>IF：根据 PC 取指令</td><td><span class="tag green">满足</span></td><td><code>pcbus</code> 输出地址，外部 ROM 返回 <code>instr</code>。</td></tr>
+    <tr><td>ID：生成控制信号</td><td><span class="tag green">满足</span></td><td>Splitter（分线器）拆指令字段，译码出 <code>IS_WAIT</code>、<code>IS_WRITE</code> 等信号。</td></tr>
+    <tr><td>EX：运算操作数</td><td><span class="tag green">满足</span></td><td>ALU、WAIT 调速路径、比较器（Comparator）均属于执行阶段。</td></tr>
+    <tr><td>MEM：访问存储器</td><td><span class="tag green">满足</span></td><td>访问 APU 内存映射寄存器；这是 I/O 型存储器访问。</td></tr>
+    <tr><td>WB：写回寄存器</td><td><span class="tag green">满足</span></td><td>写回 R0-R3、更新 PC / WAITCNT / busy 等状态。</td></tr>
+  </table>
+
+  <h2>5. 最终答辩用短版</h2>
+  <pre>我们的 CPU 是单周期五段 CPU，但不是通用 MIPS，而是面向音乐播放器的定制 ISA。
+IF 阶段由 PC 通过 pcbus 取外部曲目 ROM 的 instr；
+ID 阶段用 Splitter 拆 opcode 和操作数字段；
+EX 阶段执行 ALU、WAIT 状态机和调速计算；
+MEM 阶段写 APU 的内存映射寄存器；
+WB 阶段更新 PC、R0-R3 和 WAIT 状态。
+
+普通指令一个周期完成；WAIT 是为了音乐节奏额外加入的多周期停顿指令。
+所以准确说法是：单周期五段 CPU + WAIT 多周期扩展。</pre>
+
+  <footer>
+    Logisim NSF Music Player · 说明文件：cpu_single_cycle_explanation.html · 相关电路：cpu.circ / top.circ / apu.circ
+  </footer>
+</div>
+</body>
+</html>

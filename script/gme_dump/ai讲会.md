@@ -1,0 +1,5 @@
+- 注册github
+- 下载claude code 和 codex
+- 下载 cc switch
+- 接入我的mimo
+- 剩下的你自己去问就行

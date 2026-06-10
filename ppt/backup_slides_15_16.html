@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>PPT 旧第 15/16 页备份</title>
+</head>
+<body>
+
+<!-- 旧第 15 页：演示与结论 -->
+<section class="slide" data-label="演示与结论">
+  <header class="s-head">
+    <div class="kicker">
+      <span class="k-num">15</span><span>收束 · 演示与结论</span>
+      <span class="k-bar"></span><span class="k-time">建议 0:40</span>
+    </div>
+    <h1 class="s-title">演示收束：先证明能播，<span class="accent">再证明为什么是硬件</span></h1>
+  </header>
+  <div class="s-body vcenter">
+    <div class="grid2" style="grid-template-columns: 42fr 58fr; gap:36px">
+      <div>
+        <div style="font-family:var(--mono);font-size:13px;letter-spacing:0.18em;color:var(--text-mute);margin-bottom:16px">现场演示顺序</div>
+        <div class="tl-item"><div class="tl-num">1</div><div class="tl-content"><h4>播放真实 NSF 曲目</h4><p>打开 top.circ，自动节拍 ≥2kHz，按播放</p></div></div>
+        <div class="tl-item"><div class="tl-num">2</div><div class="tl-content"><h4>切 normal / slow / fast</h4><p>听到节奏变化 = ALU 正在改写每帧 WAIT</p></div></div>
+        <div class="tl-item"><div class="tl-num">3</div><div class="tl-content"><h4>逐个关声道</h4><p>P1 / P2 / Triangle / Noise 独立开关 = 四通道真实独立</p></div></div>
+        <div class="tl-item"><div class="tl-num">4</div><div class="tl-content"><h4>放大 CPU 局部</h4><p>看 PC 步进、WAIT 冻结、写脉冲、R0–R3</p></div></div>
+        <div class="tl-item"><div class="tl-num">5</div><div class="tl-content"><h4>展示脚本输出</h4><p>.nsf → 日志 → trackNN.txt 的对应关系</p></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div class="card good">
+          <div class="card-title">项目结论（三点）</div>
+          <ul class="pts tight">
+            <li><strong>输入真实</strong>：真实 NSF 文件；GME 运行真实播放逻辑，hook 的是寄存器写入，不是音频采样。</li>
+            <li><strong>执行真实</strong>：Logisim 里由 CPU 取指执行、WAIT 控时序、ALU 变速——不是脚本代播。</li>
+            <li><strong>声音可信</strong>：音高来自 NES timer 公式查表（真实 Hz），节奏来自 frame_cycles × WAIT 停顿。</li>
+          </ul>
+        </div>
+        <div class="card warning">
+          <div class="card-title">主动声明的边界</div>
+          <ul class="pts tight" style="font-size:18px">
+            <li>DMC 采样通道与扩展音源裁剪；Noise 是 Buzzer 低频近似，非完整 LFSR 音色。</li>
+            <li>Buzzer 参数变化会重建音频缓冲——强颤音/包络可能有爆破感，已用 frame_commit + 脚本节流缓解。</li>
+            <li>Windows 上 Logisim 低频自动节拍不准 → 项目固定用 &gt;1000Hz 自动节拍 + WAIT / 电路分频。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="s-foot"><span>谢谢，欢迎提问</span><span>15 / 16</span></footer>
+</section>
+
+<!-- 旧第 16 页：Q&A 备份 -->
+<section class="slide" data-label="备份 · Q&A">
+  <header class="s-head">
+    <div class="kicker">
+      <span class="k-num">16</span><span>备份页 · Q&amp;A</span>
+      <span class="k-bar"></span><span class="k-time">仅被追问时使用</span>
+    </div>
+    <h1 class="s-title">常见追问 · <span class="accent">一句话回答</span></h1>
+  </header>
+  <div class="s-body vcenter">
+    <div class="qa-grid" style="flex:0 0 auto;align-content:center">
+      <div class="qa"><div class="q">为什么不实现完整 6502 / 2A03？</div><div class="a">课程目标是 CPU + APU 播放器，不是 NES 模拟器。复杂执行<b>离线交给 GME</b>，Logisim 只实现播放所需的指令、时序与声道。</div></div>
+      <div class="qa"><div class="q">为什么 Buzzer 频率不按仿真时钟缩放？</div><div class="a">Buzzer 按<b>真实墙上时间</b>生成波形；时钟只影响 CPU 速度（节奏）。音高必须给真实 Hz，否则变速会连音高一起变。</div></div>
+      <div class="qa"><div class="q">frame_cycles=32 凭什么控制节奏？</div><div class="a">编码器保证每帧恒占 32 周期（WRITE + 补 WAIT）；CPU 遇 WAIT <b>真的停 PC</b>。没有 WAIT 停顿，这个数字毫无意义。</div></div>
+      <div class="qa"><div class="q">$4015 为什么映射到 reg9？</div><div class="a">reg_id 仅 4 位（16 槽），$4015 在范围外；借真实 NES <b>未使用的 $4009 槽位</b>承载声道使能，$4009/$400D 原写入丢弃。</div></div>
+      <div class="qa"><div class="q">为什么 wr = is_write · clk？</div><div class="a">APU 把 WR 当时钟边沿。连续两条 WRITE 时电平不回落，第二条会<b>丢失边沿</b>；与 clk 相与保证每条 WRITE 一个干净脉冲。</div></div>
+      <div class="qa"><div class="q">ALU 是不是只是演示？</div><div class="a">不是。ALU 在 <b>WAIT 装载路径</b>上，真实播放每帧都计算 imm±Δ；slow/fast 现场可听。R0–R3 的 ADD/SUB 是额外证明。</div></div>
+      <div class="qa"><div class="q">Noise 为什么不像原曲？</div><div class="a">NES Noise 是 LFSR 模型，Buzzer 白噪声是按 Hz 平铺随机块；项目做 <b>16 档低频近似</b>保留鼓点层次，不承诺还原音色。</div></div>
+      <div class="qa"><div class="q">为什么最终 4 首而不是 16 首？</div><div class="a">16 个大 ROM 过重且有空槽问题；最终 <b>4 首连续槽位</b> + 2-bit 曲号 + 4:1 多路复用器（Multiplexer），功能等价且更稳。</div></div>
+    </div>
+  </div>
+  <footer class="s-foot"><span>Logisim NSF Music Player</span><span>16 / 16 · 备份</span></footer>
+</section>
+
+<!-- 旧讲稿备注 -->
+<script type="application/json" id="old-speaker-notes-15-16">
+[
+  "演示顺序：播放→变速→关声道→放大 CPU→看脚本输出。结论三点：输入真实、执行真实（硬件不是脚本代播）、声音可信。主动讲边界：DMC 裁剪、Noise 近似、Buzzer 重建噪、低频节拍不准的 Windows 对策。",
+  "备份页：被追问时再翻。每个问题先给一句话结论，再按需展开到对应正片页。"
+]
+</script>
+
+</body>
+</html>
