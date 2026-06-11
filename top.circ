@@ -19,8 +19,8 @@
   <lib desc="#BFH-Praktika" name="10"/>
   <lib desc="#Input/Output-Extra" name="11"/>
   <lib desc="#Soc" name="12"/>
-  <lib desc="file#cpu.circ" name="13"/>
-  <lib desc="file#apu.circ" name="14"/>
+  <lib desc="file#apu.circ" name="13"/>
+  <lib desc="file#cpu.circ" name="14"/>
   <main name="main"/>
   <options>
     <a name="gateUndefined" val="ignore"/>
@@ -210,17 +210,17 @@
       <a name="fanout" val="4"/>
       <a name="incoming" val="4"/>
     </comp>
-    <comp lib="0" loc="(3340,1510)" name="Tunnel">
+    <comp lib="0" loc="(3330,1460)" name="Tunnel">
       <a name="label" val="CH0"/>
     </comp>
-    <comp lib="0" loc="(3340,1540)" name="Tunnel">
-      <a name="label" val="CH1"/>
+    <comp lib="0" loc="(3340,1670)" name="Tunnel">
+      <a name="label" val="CH3"/>
     </comp>
-    <comp lib="0" loc="(3340,1570)" name="Tunnel">
+    <comp lib="0" loc="(3350,1570)" name="Tunnel">
       <a name="label" val="CH2"/>
     </comp>
-    <comp lib="0" loc="(3340,1600)" name="Tunnel">
-      <a name="label" val="CH3"/>
+    <comp lib="0" loc="(3360,1530)" name="Tunnel">
+      <a name="label" val="CH1"/>
     </comp>
     <comp lib="0" loc="(3580,1700)" name="Tunnel">
       <a name="facing" val="east"/>
@@ -502,8 +502,8 @@
     <comp lib="1" loc="(680,680)" name="OR Gate"/>
     <comp lib="1" loc="(720,600)" name="AND Gate"/>
     <comp lib="1" loc="(860,1120)" name="AND Gate"/>
-    <comp lib="13" loc="(1110,110)" name="CPU"/>
-    <comp lib="14" loc="(3600,1700)" name="APU"/>
+    <comp lib="13" loc="(3600,1700)" name="APU"/>
+    <comp lib="14" loc="(1110,110)" name="CPU"/>
     <comp lib="2" loc="(2950,690)" name="Multiplexer">
       <a name="select" val="2"/>
       <a name="width" val="16"/>
@@ -19365,14 +19365,17 @@
     <wire from="(2930,740)" to="(2940,740)"/>
     <wire from="(2950,690)" to="(3040,690)"/>
     <wire from="(3280,1580)" to="(3300,1580)"/>
-    <wire from="(3320,1540)" to="(3330,1540)"/>
+    <wire from="(3320,1460)" to="(3320,1540)"/>
+    <wire from="(3320,1460)" to="(3330,1460)"/>
     <wire from="(3320,1550)" to="(3340,1550)"/>
     <wire from="(3320,1560)" to="(3340,1560)"/>
     <wire from="(3320,1570)" to="(3330,1570)"/>
-    <wire from="(3330,1510)" to="(3330,1540)"/>
-    <wire from="(3330,1510)" to="(3340,1510)"/>
-    <wire from="(3330,1570)" to="(3330,1600)"/>
-    <wire from="(3330,1600)" to="(3340,1600)"/>
+    <wire from="(3330,1570)" to="(3330,1670)"/>
+    <wire from="(3330,1670)" to="(3340,1670)"/>
+    <wire from="(3340,1530)" to="(3340,1550)"/>
+    <wire from="(3340,1530)" to="(3360,1530)"/>
+    <wire from="(3340,1560)" to="(3340,1570)"/>
+    <wire from="(3340,1570)" to="(3350,1570)"/>
     <wire from="(3580,1700)" to="(3600,1700)"/>
     <wire from="(3580,1720)" to="(3600,1720)"/>
     <wire from="(3580,1740)" to="(3600,1740)"/>
